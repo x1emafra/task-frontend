@@ -8,14 +8,14 @@ export default function App() {
   const [title, setTitle] = useState("");
   const [user, setUser] = useState(null);
 
-  // 🔐 Sesión
+  // 🔐 Obtener sesión
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
     });
   }, []);
 
-  // 🔐 Si no está logueado
+  // 🔐 Si no hay usuario → login
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -24,37 +24,58 @@ export default function App() {
     );
   }
 
-  // 📦 Cargar tareas
+  // 📦 Cargar tareas del usuario
   const loadTasks = async () => {
-    const res = await getTasks();
-    setTasks(res.data);
+    try {
+      const res = await getTasks(user.id);
+      setTasks(res.data);
+    } catch (error) {
+      console.error("Error cargando tareas:", error);
+    }
   };
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (user) loadTasks();
+  }, [user]);
 
-  // ➕ Crear
+  // ➕ Crear tarea
   const handleAdd = async () => {
     if (!title.trim()) return;
-    await createTask({ title });
-    setTitle("");
-    loadTasks();
+
+    try {
+      await createTask({
+        title,
+        userId: user.id, // 🔥 clave multiusuario
+      });
+
+      setTitle("");
+      loadTasks();
+    } catch (error) {
+      console.error("Error creando tarea:", error);
+    }
   };
 
   // ❌ Eliminar
   const handleDelete = async (id) => {
-    await deleteTask(id);
-    loadTasks();
+    try {
+      await deleteTask(id);
+      loadTasks();
+    } catch (error) {
+      console.error("Error eliminando:", error);
+    }
   };
 
   // ✔ Toggle
   const handleToggle = async (task) => {
-    await updateTask(task.id, {
-      ...task,
-      completed: !task.completed,
-    });
-    loadTasks();
+    try {
+      await updateTask(task.id, {
+        ...task,
+        completed: !task.completed,
+      });
+      loadTasks();
+    } catch (error) {
+      console.error("Error actualizando:", error);
+    }
   };
 
   // 🚪 Logout
@@ -73,7 +94,7 @@ export default function App() {
 
           <button
             onClick={handleLogout}
-            className="text-sm bg-red-600 px-3 py-1 rounded"
+            className="text-sm bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
           >
             Logout
           </button>
@@ -89,11 +110,12 @@ export default function App() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700"
+            className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+
           <button
             onClick={handleAdd}
-            className="px-5 py-3 bg-blue-600 rounded-lg"
+            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium"
           >
             Agregar
           </button>
@@ -101,6 +123,7 @@ export default function App() {
 
         {/* LISTA */}
         <div className="space-y-3">
+
           {tasks.length === 0 && (
             <p className="text-center text-gray-400">
               No hay tareas 👀
@@ -110,28 +133,38 @@ export default function App() {
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex justify-between items-center bg-gray-800 p-3 rounded"
+              className="flex items-center justify-between bg-gray-800 px-4 py-3 rounded-lg hover:bg-gray-700 transition"
             >
+              {/* IZQUIERDA */}
               <div
                 onClick={() => handleToggle(task)}
-                className="cursor-pointer flex gap-2"
+                className="flex items-center gap-3 cursor-pointer"
               >
-                <span>
-                  {task.completed ? "✅" : "⬜"}
-                </span>
+                <div
+                  className={`w-5 h-5 rounded border flex items-center justify-center ${
+                    task.completed
+                      ? "bg-green-500 border-green-500"
+                      : "border-gray-500"
+                  }`}
+                >
+                  {task.completed && "✓"}
+                </div>
 
                 <span
-                  className={
-                    task.completed ? "line-through text-gray-500" : ""
-                  }
+                  className={`${
+                    task.completed
+                      ? "line-through text-gray-500"
+                      : ""
+                  }`}
                 >
                   {task.title}
                 </span>
               </div>
 
+              {/* DELETE */}
               <button
                 onClick={() => handleDelete(task.id)}
-                className="text-red-400"
+                className="text-red-400 hover:text-red-600 transition"
               >
                 ✕
               </button>
