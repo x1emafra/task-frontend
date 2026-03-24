@@ -50,23 +50,46 @@ function App() {
   if (!session) return <Auth />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white flex justify-center items-start pt-16">
+    <div className="min-h-screen flex bg-gray-950 text-white">
 
-      <div className="w-full max-w-xl">
+      {/* SIDEBAR */}
+      <div className="w-64 bg-black border-r border-gray-800 p-6 flex flex-col justify-between">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">🚀 Task App</h1>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="text-sm text-red-400 hover:text-red-300"
-          >
-            Logout
-          </button>
+        <div>
+          <h1 className="text-2xl font-bold mb-8">🚀 TaskApp</h1>
+
+          <nav className="space-y-4">
+            <p className="text-gray-400 text-sm">MENU</p>
+
+            <button className="block w-full text-left px-3 py-2 rounded-lg bg-gray-800">
+              📋 Tareas
+            </button>
+
+            <button className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800">
+              📊 Stats (próximo)
+            </button>
+
+            <button className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800">
+              ⚙️ Settings (próximo)
+            </button>
+          </nav>
         </div>
 
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="text-red-400 hover:text-red-300"
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* MAIN */}
+      <div className="flex-1 p-10">
+
+        <h2 className="text-3xl font-bold mb-6">Tus tareas</h2>
+
         {/* INPUT */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-8 max-w-xl">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -75,18 +98,18 @@ function App() {
           />
           <button
             onClick={handleAdd}
-            className="bg-blue-600 hover:bg-blue-700 px-5 rounded-xl"
+            className="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl"
           >
-            +
+            Agregar
           </button>
         </div>
 
         {/* LISTA */}
-        <div className="space-y-3">
+        <div className="grid gap-4 max-w-xl">
           {tasks.map((t) => (
             <div
               key={t.id}
-              className="bg-gray-800/70 backdrop-blur p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition"
+              className="bg-gray-800 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition"
             >
               <span>{t.title}</span>
               <button
@@ -101,7 +124,7 @@ function App() {
 
         {/* EMPTY */}
         {tasks.length === 0 && (
-          <p className="text-center text-gray-500 mt-6">
+          <p className="text-gray-500 mt-6">
             No tienes tareas aún 👀
           </p>
         )}
