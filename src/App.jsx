@@ -1,178 +1,94 @@
 import { useEffect, useState } from "react";
-import { getTasks, createTask, deleteTask, updateTask } from "./api";
 import { supabase } from "./supabase";
+import { getTasks, createTask, deleteTask } from "./api";
 import Auth from "./Auth";
 
-export default function App() {
+function App() {
+  const [session, setSession] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
-  const [user, setUser] = useState(null);
 
-  // 🔐 Obtener sesión
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
+      setSession(data.session);
+      if (data.session) loadTasks(data.session.user.id);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadTasks(session.user.id);
+      else setTasks([]);
     });
   }, []);
 
-  // 🔐 Si no hay usuario → login
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <Auth />
-      </div>
-    );
-  }
-
-  // 📦 Cargar tareas del usuario
-  const loadTasks = async () => {
+  const loadTasks = async (userId) => {
     try {
-      const res = await getTasks(user.id);
+      const res = await getTasks(userId);
       setTasks(res.data);
     } catch (error) {
-      console.error("Error cargando tareas:", error);
+      console.error("ERROR CARGANDO TASKS:", error);
     }
   };
 
-  useEffect(() => {
-    if (user) loadTasks();
-  }, [user]);
-
-  // ➕ Crear tarea
   const handleAdd = async () => {
-    if (!title.trim()) return;
+    if (!title) return;
 
     try {
       await createTask({
         title,
-        userId: user.id, // 🔥 clave multiusuario
+        userId: session.user.id, // 👈 CLAVE
       });
 
       setTitle("");
-      loadTasks();
+      loadTasks(session.user.id);
     } catch (error) {
-      console.error("Error creando tarea:", error);
+      console.error("ERROR CREANDO:", error);
     }
   };
 
-  // ❌ Eliminar
   const handleDelete = async (id) => {
-    try {
-      await deleteTask(id);
-      loadTasks();
-    } catch (error) {
-      console.error("Error eliminando:", error);
-    }
+    await deleteTask(id);
+    loadTasks(session.user.id);
   };
 
-  // ✔ Toggle
-  const handleToggle = async (task) => {
-    try {
-      await updateTask(task.id, {
-        ...task,
-        completed: !task.completed,
-      });
-      loadTasks();
-    } catch (error) {
-      console.error("Error actualizando:", error);
-    }
-  };
-
-  // 🚪 Logout
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
+  if (!session) return <Auth />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-xl">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center pt-20">
+      <h1 className="text-3xl mb-6">🚀 Task App</h1>
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">🚀 Task App</h1>
-
-          <button
-            onClick={handleLogout}
-            className="text-sm bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
-          >
-            Logout
-          </button>
-        </div>
-
-        <p className="text-gray-400 mb-4">
-          {tasks.length} tareas
-        </p>
-
-        {/* INPUT */}
-        <div className="flex gap-2 mb-6">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          <button
-            onClick={handleAdd}
-            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium"
-          >
-            Agregar
-          </button>
-        </div>
-
-        {/* LISTA */}
-        <div className="space-y-3">
-
-          {tasks.length === 0 && (
-            <p className="text-center text-gray-400">
-              No hay tareas 👀
-            </p>
-          )}
-
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex items-center justify-between bg-gray-800 px-4 py-3 rounded-lg hover:bg-gray-700 transition"
-            >
-              {/* IZQUIERDA */}
-              <div
-                onClick={() => handleToggle(task)}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <div
-                  className={`w-5 h-5 rounded border flex items-center justify-center ${
-                    task.completed
-                      ? "bg-green-500 border-green-500"
-                      : "border-gray-500"
-                  }`}
-                >
-                  {task.completed && "✓"}
-                </div>
-
-                <span
-                  className={`${
-                    task.completed
-                      ? "line-through text-gray-500"
-                      : ""
-                  }`}
-                >
-                  {task.title}
-                </span>
-              </div>
-
-              {/* DELETE */}
-              <button
-                onClick={() => handleDelete(task.id)}
-                className="text-red-400 hover:text-red-600 transition"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-
+      <div className="flex gap-2 mb-6">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Nueva tarea..."
+          className="px-4 py-2 rounded bg-gray-800"
+        />
+        <button onClick={handleAdd} className="bg-blue-600 px-4 rounded">
+          +
+        </button>
       </div>
+
+      <ul className="w-80">
+        {tasks.map((t) => (
+          <li
+            key={t.id}
+            className="bg-gray-800 p-3 mb-2 rounded flex justify-between"
+          >
+            {t.title}
+            <button onClick={() => handleDelete(t.id)}>❌</button>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        onClick={() => supabase.auth.signOut()}
+        className="mt-6 text-red-400"
+      >
+        Logout
+      </button>
     </div>
   );
 }
+
+export default App;
