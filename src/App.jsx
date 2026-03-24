@@ -2,11 +2,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getTasks, createTask, deleteTask, updateTask } from "./api";
 import Auth from "./Auth";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+} from "@hello-pangea/dnd";
 
 function App() {
   const [session, setSession] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -51,7 +58,33 @@ function App() {
     loadTasks(session.user.id);
   };
 
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(tasks);
+    const [moved] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, moved);
+
+    setTasks(items);
+
+    // actualizar orden en backend
+    for (let i = 0; i < items.length; i++) {
+      await updateTask(items[i].id, { order: i });
+    }
+  };
+
   if (!session) return <Auth />;
+
+  // filtros + búsqueda
+  const filteredTasks = tasks
+    .filter((t) => {
+      if (filter === "completed") return t.completed;
+      if (filter === "pending") return !t.completed;
+      return true;
+    })
+    .filter((t) =>
+      t.title.toLowerCase().includes(search.toLowerCase())
+    );
 
   const total = tasks.length;
   const completed = tasks.filter((t) => t.completed).length;
@@ -64,22 +97,33 @@ function App() {
         <div>
           <h1 className="text-2xl font-bold mb-8">🚀 TaskApp</h1>
 
-          <nav className="space-y-4">
-            <p className="text-gray-400 text-sm">MENU</p>
-
-            <button className="block w-full text-left px-3 py-2 rounded-lg bg-gray-800">
-              📋 Tareas
+          <nav className="space-y-3">
+            <button
+              onClick={() => setFilter("all")}
+              className="w-full text-left px-3 py-2 rounded bg-gray-800"
+            >
+              📋 Todas
             </button>
 
-            <button className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800">
-              📊 Stats
+            <button
+              onClick={() => setFilter("pending")}
+              className="w-full text-left px-3 py-2 rounded hover:bg-gray-800"
+            >
+              ⏳ Pendientes
+            </button>
+
+            <button
+              onClick={() => setFilter("completed")}
+              className="w-full text-left px-3 py-2 rounded hover:bg-gray-800"
+            >
+              ✅ Completadas
             </button>
           </nav>
         </div>
 
         <button
           onClick={() => supabase.auth.signOut()}
-          className="text-red-400 hover:text-red-300"
+          className="text-red-400"
         >
           Logout
         </button>
@@ -91,82 +135,86 @@ function App() {
         <h2 className="text-3xl font-bold mb-6">Tus tareas</h2>
 
         {/* STATS */}
-        <div className="flex gap-6 mb-8">
-          <div className="bg-gray-800 p-4 rounded-xl w-40 text-center">
-            <p className="text-gray-400 text-sm">Total</p>
-            <p className="text-2xl font-bold">{total}</p>
+        <div className="flex gap-6 mb-6">
+          <div className="bg-gray-800 p-4 rounded-xl w-32 text-center">
+            {total} total
           </div>
-
-          <div className="bg-gray-800 p-4 rounded-xl w-40 text-center">
-            <p className="text-gray-400 text-sm">Completadas</p>
-            <p className="text-2xl font-bold text-green-400">{completed}</p>
+          <div className="bg-gray-800 p-4 rounded-xl w-32 text-center text-green-400">
+            {completed} completadas
           </div>
         </div>
 
-        {/* INPUT */}
-        <div className="flex gap-2 mb-8 max-w-xl">
+        {/* INPUT + SEARCH */}
+        <div className="flex gap-2 mb-6 max-w-xl">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            className="flex-1 px-4 py-3 rounded bg-gray-800"
           />
           <button
             onClick={handleAdd}
-            className="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl transition"
+            className="bg-blue-600 px-4 rounded"
           >
-            Agregar
+            +
           </button>
         </div>
 
-        {/* LISTA */}
-        <div className="grid gap-4 max-w-xl">
-          {tasks.map((t) => (
-            <div
-              key={t.id}
-              className="bg-gray-800 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition-all duration-200 hover:scale-[1.02]"
-            >
-              <div className="flex items-center gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar..."
+          className="mb-6 px-4 py-2 rounded bg-gray-800 w-full max-w-xl"
+        />
 
-                {/* CHECKBOX */}
-                <div
-                  onClick={() => handleToggle(t)}
-                  className={`w-5 h-5 rounded border cursor-pointer flex items-center justify-center transition ${
-                    t.completed
-                      ? "bg-green-500 border-green-500"
-                      : "border-gray-500"
-                  }`}
-                >
-                  {t.completed && "✓"}
-                </div>
-
-                <span
-                  className={`transition ${
-                    t.completed
-                      ? "line-through text-gray-500"
-                      : ""
-                  }`}
-                >
-                  {t.title}
-                </span>
-              </div>
-
-              <button
-                onClick={() => handleDelete(t.id)}
-                className="text-red-400 hover:text-red-300 transition"
+        {/* DRAG LIST */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="tasks">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-3 max-w-xl"
               >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
+                {filteredTasks.map((t, index) => (
+                  <Draggable key={t.id} draggableId={String(t.id)} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="bg-gray-800 p-4 rounded flex justify-between items-center hover:scale-[1.02] transition"
+                      >
+                        <div
+                          onClick={() => handleToggle(t)}
+                          className="flex gap-3 cursor-pointer"
+                        >
+                          <div
+                            className={`w-5 h-5 border rounded ${
+                              t.completed ? "bg-green-500" : ""
+                            }`}
+                          />
+                          <span
+                            className={
+                              t.completed ? "line-through text-gray-500" : ""
+                            }
+                          >
+                            {t.title}
+                          </span>
+                        </div>
 
-        {/* EMPTY */}
-        {tasks.length === 0 && (
-          <p className="text-gray-500 mt-6">
-            No tienes tareas aún 👀
-          </p>
-        )}
+                        <button onClick={() => handleDelete(t.id)}>
+                          ❌
+                        </button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
       </div>
     </div>
