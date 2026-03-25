@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import { getTasks, createTask, deleteTask, updateTask } from "./api";
+import {
+  getTasks,
+  createTask,
+  deleteTask,
+  updateTask,
+  shareTask,
+} from "./api";
 import Auth from "./Auth";
 import {
   DragDropContext,
@@ -14,84 +20,93 @@ function App() {
   const [session, setSession] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
 
+  // AUTH
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session) loadTasks(data.session.user.id);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) loadTasks(session.user.id);
-      else setTasks([]);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        if (session) loadTasks(session.user.id);
+        else setTasks([]);
+      }
+    );
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
+  // LOAD TASKS
   const loadTasks = async (userId) => {
     try {
       const res = await getTasks(userId);
       setTasks(res.data);
-    } catch (err) {
+    } catch {
       toast.error("Error cargando tareas");
     }
   };
 
-  // auto refresh
-  useEffect(() => {
-    if (!session) return;
-
-    const interval = setInterval(() => {
-      loadTasks(session.user.id);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [session]);
-
+  // CREATE
   const handleAdd = async () => {
     if (!title) return;
-
-    setLoading(true);
 
     try {
       await createTask({
         title,
         userId: session.user.id,
+        email: session.user.email,
       });
 
       setTitle("");
+      loadTasks(session.user.id);
       toast.success("Tarea creada");
-    } catch (err) {
-      toast.error("Error creando tarea");
+    } catch {
+      toast.error("Error creando");
     }
-
-    setLoading(false);
   };
 
+  // DELETE
   const handleDelete = async (id) => {
     if (!confirm("¿Eliminar tarea?")) return;
 
     try {
-      await deleteTask(id);
-      toast.success("Tarea eliminada");
-    } catch (err) {
+      await deleteTask(id, session.user.id);
+      loadTasks(session.user.id);
+      toast.success("Eliminada");
+    } catch {
       toast.error("Error eliminando");
     }
   };
 
+  // TOGGLE
   const handleToggle = async (task) => {
     try {
       await updateTask(task.id, {
         completed: !task.completed,
       });
+      loadTasks(session.user.id);
     } catch {
       toast.error("Error actualizando");
     }
   };
 
+  // SHARE
+  const handleShare = async (taskId) => {
+    const email = prompt("Email para compartir:");
+    if (!email) return;
+
+    try {
+      await shareTask({ taskId, email });
+      toast.success("Compartido");
+    } catch {
+      toast.error("Usuario no encontrado");
+    }
+  };
+
+  // 🔥 DRAG & DROP REAL
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -101,126 +116,115 @@ function App() {
 
     setTasks(items);
 
-    for (let i = 0; i < items.length; i++) {
-      await updateTask(items[i].id, { order: i });
+    try {
+      await Promise.all(
+        items.map((item, index) =>
+          updateTask(item.id, { order: index })
+        )
+      );
+    } catch {
+      toast.error("Error reordenando");
     }
   };
 
   if (!session) return <Auth />;
 
-  const filteredTasks = tasks
-    .filter((t) => {
-      if (filter === "completed") return t.completed;
-      if (filter === "pending") return !t.completed;
-      return true;
-    })
-    .filter((t) =>
-      t.title.toLowerCase().includes(search.toLowerCase())
-    );
-
-  const total = tasks.length;
-  const completed = tasks.filter((t) => t.completed).length;
-
   return (
-    <div className="min-h-screen flex bg-gray-950 text-white">
-
+    <div className="min-h-screen bg-black text-white p-10">
       <Toaster position="top-right" />
 
-      {/* SIDEBAR */}
-      <div className="w-64 bg-black border-r border-gray-800 p-6 flex flex-col justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-8">🚀 TaskApp</h1>
-
-          <nav className="space-y-3">
-            <button onClick={() => setFilter("all")} className="px-3 py-2 bg-gray-800 rounded w-full text-left">
-              📋 Todas
-            </button>
-            <button onClick={() => setFilter("pending")} className="px-3 py-2 hover:bg-gray-800 rounded w-full text-left">
-              ⏳ Pendientes
-            </button>
-            <button onClick={() => setFilter("completed")} className="px-3 py-2 hover:bg-gray-800 rounded w-full text-left">
-              ✅ Completadas
-            </button>
-          </nav>
-        </div>
-
-        <button onClick={() => supabase.auth.signOut()} className="text-red-400">
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h1 className="text-3xl">🚀 Task App</h1>
+        <button onClick={() => supabase.auth.signOut()}>
           Logout
         </button>
       </div>
 
-      {/* MAIN */}
-      <div className="flex-1 p-10">
-
-        <h2 className="text-3xl font-bold mb-6">Tus tareas</h2>
-
-        <div className="flex gap-6 mb-6">
-          <div className="bg-gray-800 p-4 rounded-xl">{total} total</div>
-          <div className="bg-gray-800 p-4 rounded-xl text-green-400">{completed} completadas</div>
-        </div>
-
-        <div className="flex gap-2 mb-6 max-w-xl">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-3 rounded bg-gray-800"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={loading}
-            className="bg-blue-600 px-4 rounded"
-          >
-            {loading ? "..." : "+"}
-          </button>
-        </div>
-
+      {/* INPUT */}
+      <div className="flex gap-2 mb-6">
         <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar..."
-          className="mb-6 px-4 py-2 rounded bg-gray-800 w-full max-w-xl"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Nueva tarea..."
+          className="bg-gray-800 px-4 py-2 rounded w-64"
         />
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="tasks">
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3 max-w-xl">
-
-                <AnimatePresence>
-                  {filteredTasks.map((t, index) => (
-                    <Draggable key={t.id} draggableId={String(t.id)} index={index}>
-                      {(provided) => (
-                        <motion.div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -50 }}
-                          className="bg-gray-800 p-4 rounded flex justify-between items-center"
-                        >
-                          <div onClick={() => handleToggle(t)} className="flex gap-3 cursor-pointer">
-                            <div className={`w-5 h-5 border rounded ${t.completed ? "bg-green-500" : ""}`} />
-                            <span className={t.completed ? "line-through text-gray-500" : ""}>
-                              {t.title}
-                            </span>
-                          </div>
-
-                          <button onClick={() => handleDelete(t.id)}>❌</button>
-                        </motion.div>
-                      )}
-                    </Draggable>
-                  ))}
-                </AnimatePresence>
-
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-
+        <button
+          onClick={handleAdd}
+          className="bg-blue-600 px-4 rounded"
+        >
+          +
+        </button>
       </div>
+
+      {/* 🔥 DRAG LIST CORRECTA */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="tasks">
+          {(provided) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className="space-y-3 max-w-xl"
+            >
+              <AnimatePresence>
+                {tasks.map((t, index) => (
+                  <Draggable
+                    key={t.id}
+                    draggableId={String(t.id)}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <motion.div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-gray-800 p-4 rounded flex justify-between items-center"
+                      >
+                        {/* LEFT */}
+                        <div
+                          onClick={() => handleToggle(t)}
+                          className="flex gap-3 cursor-pointer"
+                        >
+                          <div
+                            className={`w-5 h-5 border rounded ${
+                              t.completed ? "bg-green-500" : ""
+                            }`}
+                          />
+                          <span
+                            className={
+                              t.completed
+                                ? "line-through text-gray-500"
+                                : ""
+                            }
+                          >
+                            {t.title}
+                          </span>
+                        </div>
+
+                        {/* RIGHT */}
+                        <div className="flex gap-2">
+                          <button onClick={() => handleShare(t.id)}>
+                            📤
+                          </button>
+                          <button onClick={() => handleDelete(t.id)}>
+                            ❌
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </Draggable>
+                ))}
+              </AnimatePresence>
+
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }
