@@ -6,7 +6,7 @@ import {
   deleteTask,
   updateTask,
   shareTask,
-} from "./api";
+} from "./api/tasks";
 import Auth from "./Auth";
 import {
   DragDropContext,
@@ -20,6 +20,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // AUTH
   useEffect(() => {
@@ -39,19 +40,32 @@ function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // LOAD TASKS
+  // LOAD TASKS ✅ CORREGIDO
   const loadTasks = async (userId) => {
+    setLoading(true);
     try {
-      const res = await getTasks(userId);
-      setTasks(res.data);
-    } catch {
-      toast.error("Error cargando tareas");
+      const data = await getTasks(userId); // ✅ ya devuelve data
+      setTasks(data);
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.message || "Error cargando tareas");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // CREATE
+  // CREATE (optimistic)
   const handleAdd = async () => {
-    if (!title) return;
+    if (!title.trim()) return;
+
+    const tempTask = {
+      id: Date.now(),
+      title,
+      completed: false,
+    };
+
+    setTasks((prev) => [tempTask, ...prev]);
+    setTitle("");
 
     try {
       await createTask({
@@ -60,35 +74,49 @@ function App() {
         email: session.user.email,
       });
 
-      setTitle("");
-      loadTasks(session.user.id);
+      await loadTasks(session.user.id);
       toast.success("Tarea creada");
-    } catch {
-      toast.error("Error creando");
+    } catch (error) {
+      console.log(error);
+      setTasks((prev) => prev.filter((t) => t.id !== tempTask.id));
+      toast.error(error?.response?.data?.message || "Error creando");
     }
   };
 
-  // DELETE
+  // DELETE (optimistic)
   const handleDelete = async (id) => {
     if (!confirm("¿Eliminar tarea?")) return;
 
+    const previous = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+
     try {
       await deleteTask(id, session.user.id);
-      loadTasks(session.user.id);
       toast.success("Eliminada");
-    } catch {
+    } catch (error) {
+      console.log(error);
+      setTasks(previous);
       toast.error("Error eliminando");
     }
   };
 
-  // TOGGLE
+  // TOGGLE (optimistic) ✅ CORREGIDO closure
   const handleToggle = async (task) => {
+    const previous = tasks;
+
+    const updated = tasks.map((t) =>
+      t.id === task.id ? { ...t, completed: !t.completed } : t
+    );
+
+    setTasks(updated);
+
     try {
       await updateTask(task.id, {
         completed: !task.completed,
       });
-      loadTasks(session.user.id);
-    } catch {
+    } catch (error) {
+      console.log(error);
+      setTasks(previous); // rollback correcto
       toast.error("Error actualizando");
     }
   };
@@ -101,12 +129,13 @@ function App() {
     try {
       await shareTask({ taskId, email });
       toast.success("Compartido");
-    } catch {
-      toast.error("Usuario no encontrado");
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.message || "Usuario no encontrado");
     }
   };
 
-  // 🔥 DRAG & DROP REAL
+  // DRAG & DROP
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -122,7 +151,8 @@ function App() {
           updateTask(item.id, { order: index })
         )
       );
-    } catch {
+    } catch (error) {
+      console.log(error);
       toast.error("Error reordenando");
     }
   };
@@ -151,13 +181,21 @@ function App() {
         />
         <button
           onClick={handleAdd}
-          className="bg-blue-600 px-4 rounded"
+          disabled={!title.trim()}
+          className={`px-4 rounded ${
+            title.trim()
+              ? "bg-blue-600"
+              : "bg-gray-600 cursor-not-allowed"
+          }`}
         >
           +
         </button>
       </div>
 
-      {/* 🔥 DRAG LIST CORRECTA */}
+      {/* LOADING */}
+      {loading && <p className="text-gray-400">Cargando...</p>}
+
+      {/* LISTA */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="tasks">
           {(provided) => (
@@ -184,7 +222,6 @@ function App() {
                         whileHover={{ scale: 1.02 }}
                         className="bg-gray-800 p-4 rounded flex justify-between items-center"
                       >
-                        {/* LEFT */}
                         <div
                           onClick={() => handleToggle(t)}
                           className="flex gap-3 cursor-pointer"
@@ -205,7 +242,6 @@ function App() {
                           </span>
                         </div>
 
-                        {/* RIGHT */}
                         <div className="flex gap-2">
                           <button onClick={() => handleShare(t.id)}>
                             📤
