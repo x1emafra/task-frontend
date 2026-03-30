@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
     "@hello-pangea/dnd": "^16.5.0",
     "@supabase/supabase-js": "^2.45.0",
     "axios": "^1.6.8",
@@ -23,6 +26,7 @@
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.2",
     "vite": "^5.4.21"
   }
 }
