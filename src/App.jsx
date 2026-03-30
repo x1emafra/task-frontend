@@ -58,8 +58,9 @@ function App() {
   const handleAdd = async () => {
     if (!title.trim()) return;
 
+    const tempId = `temp-${Date.now()}`;
     const tempTask = {
-      id: Date.now(),
+      id: tempId,
       title,
       completed: false,
     };
@@ -68,17 +69,21 @@ function App() {
     setTitle("");
 
     try {
-      await createTask({
+      const created = await createTask({
         title,
         userId: session.user.id,
         email: session.user.email,
       });
 
-      await loadTasks(session.user.id);
+      // Reemplazo el task temporal (optimistic) con el task real del backend
+      setTasks((prev) =>
+        prev.map((t) => (t.id === tempId ? created : t))
+      );
+
       toast.success("Tarea creada");
     } catch (error) {
       console.log(error);
-      setTasks((prev) => prev.filter((t) => t.id !== tempTask.id));
+      setTasks((prev) => prev.filter((t) => t.id !== tempId));
       toast.error(error?.response?.data?.message || "Error creando");
     }
   };
@@ -139,6 +144,7 @@ function App() {
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
+    const previousTasks = tasks;
     const items = Array.from(tasks);
     const [moved] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, moved);
@@ -153,6 +159,7 @@ function App() {
       );
     } catch (error) {
       console.log(error);
+      setTasks(previousTasks); // rollback crash-safe
       toast.error("Error reordenando");
     }
   };
@@ -165,7 +172,9 @@ function App() {
 
       {/* HEADER */}
       <div className="flex justify-between mb-6">
-        <h1 className="text-3xl">🚀 Task App</h1>
+        <h1 className="text-3xl text-red-500">
+  🚀 Task App
+</h1>
         <button onClick={() => supabase.auth.signOut()}>
           Logout
         </button>
