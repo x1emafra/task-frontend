@@ -81,12 +81,10 @@ function App() {
     setTitle("");
 
     try {
-      const created = await createTask({
-        title,
-        userId: session.user.id,
-        email: session.user.email,
-      });
-
+      const created =await createTask({
+  title,
+  userId: session.user.id,
+});
       setTasks((prev) =>
         prev.map((t) => (t.id === tempId ? created : t))
       );
