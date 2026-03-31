@@ -26,35 +26,47 @@ function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session) loadTasks(data.session.user.id);
+      if (data.session?.user?.id) {
+        loadTasks(data.session.user.id);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        if (session) loadTasks(session.user.id);
-        else setTasks([]);
+        if (session?.user?.id) {
+          loadTasks(session.user.id);
+        } else {
+          setTasks([]);
+        }
       }
     );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // LOAD TASKS ✅ CORREGIDO
+  // LOAD TASKS ✅ FIX
   const loadTasks = async (userId) => {
+    if (!userId) {
+      console.log("USER ID no disponible");
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await getTasks(userId); // ✅ ya devuelve data
+      console.log("USER ID:", userId);
+
+      const data = await getTasks(userId);
       setTasks(data);
     } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message || "Error cargando tareas");
+      toast.error("Error cargando tareas");
     } finally {
       setLoading(false);
     }
   };
 
-  // CREATE (optimistic)
+  // CREATE
   const handleAdd = async () => {
     if (!title.trim()) return;
 
@@ -75,7 +87,6 @@ function App() {
         email: session.user.email,
       });
 
-      // Reemplazo el task temporal (optimistic) con el task real del backend
       setTasks((prev) =>
         prev.map((t) => (t.id === tempId ? created : t))
       );
@@ -84,11 +95,11 @@ function App() {
     } catch (error) {
       console.log(error);
       setTasks((prev) => prev.filter((t) => t.id !== tempId));
-      toast.error(error?.response?.data?.message || "Error creando");
+      toast.error("Error creando");
     }
   };
 
-  // DELETE (optimistic)
+  // DELETE
   const handleDelete = async (id) => {
     if (!confirm("¿Eliminar tarea?")) return;
 
@@ -105,7 +116,7 @@ function App() {
     }
   };
 
-  // TOGGLE (optimistic) ✅ CORREGIDO closure
+  // TOGGLE
   const handleToggle = async (task) => {
     const previous = tasks;
 
@@ -121,7 +132,7 @@ function App() {
       });
     } catch (error) {
       console.log(error);
-      setTasks(previous); // rollback correcto
+      setTasks(previous);
       toast.error("Error actualizando");
     }
   };
@@ -136,7 +147,7 @@ function App() {
       toast.success("Compartido");
     } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message || "Usuario no encontrado");
+      toast.error("Usuario no encontrado");
     }
   };
 
@@ -159,7 +170,7 @@ function App() {
       );
     } catch (error) {
       console.log(error);
-      setTasks(previousTasks); // rollback crash-safe
+      setTasks(previousTasks);
       toast.error("Error reordenando");
     }
   };
@@ -173,8 +184,8 @@ function App() {
       {/* HEADER */}
       <div className="flex justify-between mb-6">
         <h1 className="text-3xl text-red-500">
-  🚀 Task App
-</h1>
+          🚀 Task App
+        </h1>
         <button onClick={() => supabase.auth.signOut()}>
           Logout
         </button>
