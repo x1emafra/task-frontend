@@ -12,29 +12,38 @@ export default function Tasks() {
       try {
         setLoading(true);
 
-        // Obtener usuario
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // 🔐 Obtener usuario
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
         if (userError) throw userError;
 
         if (!user) {
           console.log("⛔ No hay usuario");
-          setLoading(false);
+          setError("Usuario no autenticado");
           return;
         }
 
-        console.log("✅ USER ID:", user.id);
+        console.log("👤 USER ID:", user.id);
 
-        // Obtener tareas
+        // 📡 Obtener tareas
         const data = await getTasks(user.id);
 
-        console.log("📦 TASKS:", data);
+        console.log("📦 DATA RECIBIDA:", data);
+        console.log("📦 TYPE:", typeof data);
+        console.log("📦 ES ARRAY:", Array.isArray(data));
 
         setTasks(data);
-
       } catch (err) {
-        console.error("🔥 ERROR:", err);
-        setError("Error cargando tareas");
+        console.error("🔥 ERROR REAL:", err);
+
+        if (err.message) {
+          setError(err);
+        } else {
+          setError("Error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -43,14 +52,23 @@ export default function Tasks() {
     load();
   }, []);
 
-  // 🧠 Estados de UI
+  // 🔍 DEBUG render
+  console.log("🎯 RENDER TASKS:", tasks);
+
+  // 🧠 UI STATES
+
   if (loading) {
     return <p>Cargando tareas...</p>;
   }
 
   if (error) {
-    return <p>{error}</p>;
-  }
+  return (
+    <div>
+      <h2>ERROR REAL 👇</h2>
+      <pre>{JSON.stringify(error, null, 2)}</pre>
+    </div>
+  );
+}
 
   return (
     <div>
