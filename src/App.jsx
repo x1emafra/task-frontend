@@ -1,12 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "./supabase";
-import {
-  getTasks,
-  createTask,
-  deleteTask,
-  updateTask,
-  shareTask,
-} from "./api/tasks";
 import Auth from "./Auth";
 import {
   DragDropContext,
@@ -14,281 +7,209 @@ import {
   Draggable,
 } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import ConfirmModal from "./components/ConfirmModal";
 import ShareModal from "./components/ShareModal";
+import { useTasks } from "./hooks/useTasks";
 
 function App() {
-  const [session, setSession] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    session,
+    tasks,
+    title,
+    setTitle,
+    loading,
+    handleAdd,
+    handleDelete,
+    handleToggle,
+    handleShare,
+    handleDragEnd,
+  } = useTasks();
 
-  // Modal states
+  // Local UI State for Modals
   const [confirmModal, setConfirmModal] = useState({ open: false, taskId: null });
   const [shareModal, setShareModal] = useState({ open: false, taskId: null });
-
-  // AUTH — Fix race condition: solo onAuthStateChange, diferenciado por evento
-  useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-
-        if (_event === "INITIAL_SESSION" || _event === "SIGNED_IN") {
-          if (session?.user?.id) loadTasks();
-        } else if (_event === "SIGNED_OUT") {
-          setTasks([]);
-        }
-      }
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  // LOAD TASKS
-  const loadTasks = async () => {
-    setLoading(true);
-    try {
-      const data = await getTasks();
-      setTasks(data);
-    } catch (error) {
-      console.error(error);
-      toast.error("Error cargando tareas");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // CREATE — Optimistic UI
-  const handleAdd = async () => {
-    if (!title.trim()) return;
-
-    const tempId = `temp-${Date.now()}`;
-    const tempTask = { id: tempId, title, completed: false };
-
-    setTasks((prev) => [tempTask, ...prev]);
-    setTitle("");
-
-    try {
-      const created = await createTask({ title });
-
-      // ✅ Reemplaza tempTask por el real
-      setTasks((prev) =>
-        prev.map((t) => (t.id === tempId ? created : t))
-      );
-
-      toast.success("Tarea creada");
-    } catch (error) {
-      console.error(error);
-
-      // ❌ Rollback si falla
-      setTasks((prev) => prev.filter((t) => t.id !== tempId));
-      toast.error("Error creando");
-    }
-  };
-
-  // DELETE — usa modal en vez de confirm()
-  const handleDelete = async () => {
-    const id = confirmModal.taskId;
-    const previous = tasks;
-
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    setConfirmModal({ open: false, taskId: null });
-
-    try {
-      await deleteTask(id);
-      toast.success("Eliminada");
-    } catch (error) {
-      console.error(error);
-      setTasks(previous);
-      toast.error("Error eliminando");
-    }
-  };
-
-  // TOGGLE — Optimistic UI
-  const handleToggle = async (task) => {
-    const previous = tasks;
-
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id ? { ...t, completed: !t.completed } : t
-      )
-    );
-
-    try {
-      await updateTask(task.id, { completed: !task.completed });
-    } catch (error) {
-      console.error(error);
-      setTasks(previous);
-      toast.error("Error actualizando");
-    }
-  };
-
-  // SHARE — usa modal en vez de prompt()
-  const handleShare = async (email) => {
-    const { taskId } = shareModal;
-    setShareModal({ open: false, taskId: null });
-
-    try {
-      await shareTask({ taskId, email });
-      toast.success("Compartido");
-    } catch (error) {
-      console.error(error);
-      toast.error("Usuario no encontrado");
-    }
-  };
-
-  // DRAG & DROP
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
-
-    const previousTasks = tasks;
-    const items = Array.from(tasks);
-    const [moved] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, moved);
-
-    setTasks(items);
-
-    try {
-      await Promise.all(
-        items.map((item, index) =>
-          updateTask(item.id, { order: index })
-        )
-      );
-    } catch (error) {
-      console.error(error);
-      setTasks(previousTasks);
-      toast.error("Error reordenando");
-    }
-  };
 
   if (!session) return <Auth />;
 
   return (
-    <div className="min-h-screen bg-black text-white p-10">
+    <div className="min-h-screen bg-black text-white p-10 font-sans tracking-tight">
       <Toaster position="top-right" />
 
       {/* MODALES */}
       <ConfirmModal
         open={confirmModal.open}
-        onConfirm={handleDelete}
+        onConfirm={() => {
+          handleDelete(confirmModal.taskId);
+          setConfirmModal({ open: false, taskId: null });
+        }}
         onCancel={() => setConfirmModal({ open: false, taskId: null })}
       />
       <ShareModal
         open={shareModal.open}
-        onShare={handleShare}
+        onShare={(email) => {
+          handleShare(shareModal.taskId, email);
+          setShareModal({ open: false, taskId: null });
+        }}
         onClose={() => setShareModal({ open: false, taskId: null })}
       />
 
       {/* HEADER */}
-      <div className="flex justify-between mb-6">
-        <h1 className="text-3xl text-red-500">
+      <div className="flex justify-between items-center mb-10 max-w-xl mx-auto">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">
           🚀 Task App
         </h1>
-        <button onClick={() => supabase.auth.signOut()}>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+        >
           Logout
         </button>
       </div>
 
       {/* INPUT */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-10 max-w-xl mx-auto">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          placeholder="Nueva tarea..."
-          className="bg-gray-800 px-4 py-2 rounded w-64"
+          placeholder="¿Qué tienes pendiente?"
+          className="bg-gray-900 border border-gray-800 px-5 py-3 rounded-xl flex-1 text-white outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 shadow-lg"
         />
         <button
           onClick={handleAdd}
           disabled={!title.trim()}
-          className={`px-4 rounded ${
-            title.trim()
-              ? "bg-blue-600"
-              : "bg-gray-600 cursor-not-allowed"
-          }`}
+          className="bg-red-600 hover:bg-red-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed px-6 rounded-xl font-bold transition-all shadow-lg active:scale-95"
         >
-          +
+          Añadir
         </button>
       </div>
 
       {/* LOADING */}
-      {loading && <p className="text-gray-400">Cargando...</p>}
+      {loading && tasks.length === 0 && (
+        <div className="max-w-xl mx-auto text-center py-10">
+          <div className="animate-spin w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">Cargando tus tareas...</p>
+        </div>
+      )}
 
       {/* LISTA */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="tasks">
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="space-y-3 max-w-xl"
-            >
-              <AnimatePresence>
-                {tasks.map((t, index) => (
-                  <Draggable
-                    key={t.id}
-                    draggableId={String(t.id)}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <motion.div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        whileHover={{ scale: 1.02 }}
-                        className="bg-gray-800 p-4 rounded flex justify-between items-center"
-                      >
-                        <div
-                          onClick={() => handleToggle(t)}
-                          className="flex gap-3 cursor-pointer"
+      <div className="max-w-xl mx-auto">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="tasks">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="space-y-4"
+              >
+                <AnimatePresence mode="popLayout">
+                  {tasks.map((t, index) => (
+                    <Draggable
+                      key={t.id}
+                      draggableId={String(t.id)}
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <motion.div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{
+                            opacity: 1,
+                            y: 0,
+                            scale: snapshot.isDragging ? 1.05 : 1,
+                            zIndex: snapshot.isDragging ? 50 : 1,
+                          }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className={`group bg-gray-900/50 hover:bg-gray-900 border border-gray-800/50 hover:border-gray-700 p-4 rounded-xl flex justify-between items-center transition-all shadow-sm ${
+                            snapshot.isDragging ? "shadow-2xl ring-2 ring-red-500/20" : ""
+                          }`}
                         >
                           <div
-                            className={`w-5 h-5 border rounded ${
-                              t.completed ? "bg-green-500" : ""
-                            }`}
-                          />
-                          <span
-                            className={
-                              t.completed
-                                ? "line-through text-gray-500"
-                                : ""
-                            }
+                            onClick={() => handleToggle(t)}
+                            className="flex gap-4 cursor-pointer items-center group-hover:translate-x-1 transition-transform"
                           >
-                            {t.title}
-                          </span>
-                        </div>
+                            <div
+                              className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center transition-all ${
+                                t.completed
+                                  ? "bg-green-500 border-green-500"
+                                  : "border-gray-700 group-hover:border-gray-500"
+                              }`}
+                            >
+                              {t.completed && (
+                                <svg
+                                  className="w-4 h-4 text-black"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={3}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <span
+                              className={`text-lg font-medium transition-all ${
+                                t.completed
+                                  ? "line-through text-gray-500"
+                                  : "text-gray-200"
+                              }`}
+                            >
+                              {t.title}
+                            </span>
+                          </div>
 
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              setShareModal({ open: true, taskId: t.id })
-                            }
-                          >
-                            📤
-                          </button>
-                          <button
-                            onClick={() =>
-                              setConfirmModal({ open: true, taskId: t.id })
-                            }
-                          >
-                            ❌
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </Draggable>
-                ))}
-              </AnimatePresence>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShareModal({ open: true, taskId: t.id });
+                              }}
+                              className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
+                              title="Compartir"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmModal({ open: true, taskId: t.id });
+                              }}
+                              className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+                              title="Eliminar"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </Draggable>
+                  ))}
+                </AnimatePresence>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
 
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+      {/* FOOTER */}
+      {!loading && tasks.length === 0 && (
+        <div className="max-w-xl mx-auto text-center py-20">
+          <p className="text-gray-600 italic">No tienes tareas pendientes. ¡Disfruta de tu tiempo libre! 🏖️</p>
+        </div>
+      )}
     </div>
   );
 }
