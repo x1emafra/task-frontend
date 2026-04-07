@@ -28,23 +28,29 @@ export const getTasks = async () => {
 export const createTask = async ({ title }) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
 
-    console.log("USER:", user);
-    console.log("TITLE:", title);
-    console.log("POST BODY:", req.body);
+    if (!user) throw new Error("User not authenticated");
+
+    console.log("👤 USER:", user.id);
+    console.log("📝 TITLE:", title);
 
     const response = await CapacitorHttp.post({
       url: `${API_URL}/tasks`,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
       data: {
         title,
-        userId: user?.id
+        userId: user.id,
       }
     });
 
+    console.log("✅ RESPONSE:", response);
     return response.data;
   } catch (error) {
-    console.error("POST ERROR:", error);
+    console.error("❌ POST ERROR:", error);
     throw error;
   }
 };
