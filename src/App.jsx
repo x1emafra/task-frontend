@@ -15,6 +15,8 @@ import {
 } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
+import ConfirmModal from "./components/ConfirmModal";
+import ShareModal from "./components/ShareModal";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -22,21 +24,19 @@ function App() {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // AUTH
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user?.id) {
-        loadTasks();
-      }
-    });
+  // Modal states
+  const [confirmModal, setConfirmModal] = useState({ open: false, taskId: null });
+  const [shareModal, setShareModal] = useState({ open: false, taskId: null });
 
+  // AUTH — Fix race condition: solo onAuthStateChange, diferenciado por evento
+  useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        if (session?.user?.id) {
-          loadTasks();
-        } else {
+
+        if (_event === "INITIAL_SESSION" || _event === "SIGNED_IN") {
+          if (session?.user?.id) loadTasks();
+        } else if (_event === "SIGNED_OUT") {
           setTasks([]);
         }
       }
@@ -52,92 +52,88 @@ function App() {
       const data = await getTasks();
       setTasks(data);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Error cargando tareas");
     } finally {
       setLoading(false);
     }
   };
 
-  // CREATE
+  // CREATE — Optimistic UI
   const handleAdd = async () => {
     if (!title.trim()) return;
 
     const tempId = `temp-${Date.now()}`;
-    const tempTask = {
-      id: tempId,
-      title,
-      completed: false,
-    };
+    const tempTask = { id: tempId, title, completed: false };
 
     setTasks((prev) => [tempTask, ...prev]);
     setTitle("");
 
     try {
-      const created =await createTask({
-  title,
-  userId: session.user.id,
-});
+      const created = await createTask({ title });
+
+      // ✅ Reemplaza tempTask por el real
       setTasks((prev) =>
         prev.map((t) => (t.id === tempId ? created : t))
       );
 
       toast.success("Tarea creada");
     } catch (error) {
-      console.log(error);
+      console.error(error);
+
+      // ❌ Rollback si falla
       setTasks((prev) => prev.filter((t) => t.id !== tempId));
       toast.error("Error creando");
     }
   };
 
-  // DELETE
-  const handleDelete = async (id) => {
-    if (!confirm("¿Eliminar tarea?")) return;
-
+  // DELETE — usa modal en vez de confirm()
+  const handleDelete = async () => {
+    const id = confirmModal.taskId;
     const previous = tasks;
+
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    setConfirmModal({ open: false, taskId: null });
 
     try {
       await deleteTask(id);
       toast.success("Eliminada");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setTasks(previous);
       toast.error("Error eliminando");
     }
   };
 
-  // TOGGLE
+  // TOGGLE — Optimistic UI
   const handleToggle = async (task) => {
     const previous = tasks;
 
-    const updated = tasks.map((t) =>
-      t.id === task.id ? { ...t, completed: !t.completed } : t
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id ? { ...t, completed: !t.completed } : t
+      )
     );
 
-    setTasks(updated);
-
     try {
-      await updateTask(task.id, {
-        completed: !task.completed,
-      });
+      await updateTask(task.id, { completed: !task.completed });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setTasks(previous);
       toast.error("Error actualizando");
     }
   };
 
-  // SHARE
-  const handleShare = async (taskId) => {
-    const email = prompt("Email para compartir:");
-    if (!email) return;
+  // SHARE — usa modal en vez de prompt()
+  const handleShare = async (email) => {
+    const { taskId } = shareModal;
+    setShareModal({ open: false, taskId: null });
 
     try {
       await shareTask({ taskId, email });
       toast.success("Compartido");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Usuario no encontrado");
     }
   };
@@ -160,7 +156,7 @@ function App() {
         )
       );
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setTasks(previousTasks);
       toast.error("Error reordenando");
     }
@@ -171,6 +167,18 @@ function App() {
   return (
     <div className="min-h-screen bg-black text-white p-10">
       <Toaster position="top-right" />
+
+      {/* MODALES */}
+      <ConfirmModal
+        open={confirmModal.open}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmModal({ open: false, taskId: null })}
+      />
+      <ShareModal
+        open={shareModal.open}
+        onShare={handleShare}
+        onClose={() => setShareModal({ open: false, taskId: null })}
+      />
 
       {/* HEADER */}
       <div className="flex justify-between mb-6">
@@ -187,6 +195,7 @@ function App() {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="Nueva tarea..."
           className="bg-gray-800 px-4 py-2 rounded w-64"
         />
@@ -254,10 +263,18 @@ function App() {
                         </div>
 
                         <div className="flex gap-2">
-                          <button onClick={() => handleShare(t.id)}>
+                          <button
+                            onClick={() =>
+                              setShareModal({ open: true, taskId: t.id })
+                            }
+                          >
                             📤
                           </button>
-                          <button onClick={() => handleDelete(t.id)}>
+                          <button
+                            onClick={() =>
+                              setConfirmModal({ open: true, taskId: t.id })
+                            }
+                          >
                             ❌
                           </button>
                         </div>
