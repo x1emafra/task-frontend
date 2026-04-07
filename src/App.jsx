@@ -27,7 +27,7 @@ function App() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.user?.id) {
-        loadTasks(data.session.user.id);
+        loadTasks();
       }
     });
 
@@ -35,7 +35,7 @@ function App() {
       (_event, session) => {
         setSession(session);
         if (session?.user?.id) {
-          loadTasks(session.user.id);
+          loadTasks();
         } else {
           setTasks([]);
         }
@@ -45,18 +45,11 @@ function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // LOAD TASKS ✅ FIX
-  const loadTasks = async (userId) => {
-    if (!userId) {
-      console.log("USER ID no disponible");
-      return;
-    }
-
+  // LOAD TASKS
+  const loadTasks = async () => {
     setLoading(true);
     try {
-      console.log("USER ID:", userId);
-
-      const data = await getTasks(userId);
+      const data = await getTasks();
       setTasks(data);
     } catch (error) {
       console.log(error);
@@ -105,7 +98,7 @@ function App() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
-      await deleteTask(id, session.user.id);
+      await deleteTask(id);
       toast.success("Eliminada");
     } catch (error) {
       console.log(error);

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabase";
 import { getTasks } from "../api/tasks";
 
 export default function Tasks() {
@@ -12,24 +11,8 @@ export default function Tasks() {
       try {
         setLoading(true);
 
-        // 🔐 Obtener usuario
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
-
-        if (!user) {
-          console.log("⛔ No hay usuario");
-          setError("Usuario no autenticado");
-          return;
-        }
-
-        console.log("👤 USER ID:", user.id);
-
-        // 📡 Obtener tareas
-        const data = await getTasks(user.id);
+        // 📡 Obtener tareas (la API maneja el userId internamente)
+        const data = await getTasks();
 
         console.log("📦 DATA RECIBIDA:", data);
         console.log("📦 TYPE:", typeof data);
