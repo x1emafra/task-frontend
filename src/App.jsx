@@ -126,7 +126,8 @@ function App() {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder={t("placeholder")}
-            className="flex-1 px-4 py-3 rounded-lg border"
+            className={`flex-1 px-4 py-3 rounded-lg border ${dark ? 'bg-gray-900 text-white' : 'bg-white text-black'
+              }`}
           />
           <button onClick={handleAdd}>
             {t("add")}
