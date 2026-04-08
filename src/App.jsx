@@ -32,7 +32,7 @@ function App() {
   if (!session) return <Auth />;
 
   return (
-    <div className="min-h-screen bg-black text-white p-10 font-sans tracking-tight flex justify-center">
+    <div className="min-h-screen bg-black text-white px-4 py-8 sm:p-10 font-sans tracking-tight flex justify-center overflow-x-hidden">
 
       <div className="w-full max-w-xl">
 
@@ -57,9 +57,9 @@ function App() {
         />
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">
-            Task App
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">
+            🚀 Task App
           </h1>
           <button
             onClick={() => supabase.auth.signOut()}
@@ -70,18 +70,18 @@ function App() {
         </div>
 
         {/* INPUT */}
-        <div className="flex gap-2 mb-10">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="¿Qué tienes pendiente?"
-            className="bg-gray-900 border border-gray-800 px-5 py-3 rounded-xl flex-1 text-white outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 shadow-lg"
+            className="bg-gray-900 border border-gray-800 px-4 py-3 rounded-xl flex-1 min-w-0 text-white outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 shadow-lg"
           />
           <button
             onClick={handleAdd}
             disabled={!title.trim()}
-            className="bg-red-600 hover:bg-red-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed px-6 rounded-xl font-bold transition-all shadow-lg active:scale-95"
+            className="bg-red-600 hover:bg-red-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed px-6 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 w-full sm:w-auto"
           >
             Añadir
           </button>
@@ -103,7 +103,7 @@ function App() {
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="space-y-4"
+                  className="space-y-3 sm:space-y-4"
                 >
                   <AnimatePresence mode="popLayout">
                     {tasks.map((t, index) => (
@@ -126,22 +126,22 @@ function App() {
                               zIndex: snapshot.isDragging ? 50 : 1,
                             }}
                             exit={{ opacity: 0, x: -20 }}
-                            className={`group bg-gray-900/50 hover:bg-gray-900 border border-gray-800/50 hover:border-gray-700 p-4 rounded-xl flex justify-between items-center transition-all shadow-sm ${snapshot.isDragging ? "shadow-2xl ring-2 ring-red-500/20" : ""
+                            className={`group bg-gray-900/50 hover:bg-gray-900 border border-gray-800/50 hover:border-gray-700 p-3 sm:p-4 rounded-xl flex justify-between items-center transition-all shadow-sm ${snapshot.isDragging ? "shadow-2xl ring-2 ring-red-500/20" : ""
                               }`}
                           >
                             <div
                               onClick={() => handleToggle(t)}
-                              className="flex gap-4 cursor-pointer items-center group-hover:translate-x-1 transition-transform"
+                              className="flex gap-3 sm:gap-4 cursor-pointer items-center flex-1 min-w-0"
                             >
                               <div
-                                className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center transition-all ${t.completed
+                                className={`w-5 h-5 sm:w-6 sm:h-6 border-2 rounded-lg flex items-center justify-center transition-all ${t.completed
                                     ? "bg-green-500 border-green-500"
                                     : "border-gray-700 group-hover:border-gray-500"
                                   }`}
                               >
                                 {t.completed && (
                                   <svg
-                                    className="w-4 h-4 text-black"
+                                    className="w-3 h-3 sm:w-4 sm:h-4 text-black"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -156,7 +156,7 @@ function App() {
                                 )}
                               </div>
                               <span
-                                className={`text-lg font-medium transition-all ${t.completed
+                                className={`text-sm sm:text-lg font-medium truncate ${t.completed
                                     ? "line-through text-gray-500"
                                     : "text-gray-200"
                                   }`}
@@ -165,18 +165,15 @@ function App() {
                               </span>
                             </div>
 
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 sm:gap-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setShareModal({ open: true, taskId: t.id });
                                 }}
                                 className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
-                                title="Compartir"
                               >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                </svg>
+                                📤
                               </button>
                               <button
                                 onClick={(e) => {
@@ -184,11 +181,8 @@ function App() {
                                   setConfirmModal({ open: true, taskId: t.id });
                                 }}
                                 className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                                title="Eliminar"
                               >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
+                                🗑️
                               </button>
                             </div>
                           </motion.div>
@@ -205,8 +199,10 @@ function App() {
 
         {/* FOOTER */}
         {!loading && tasks.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-gray-600 italic">No tienes tareas pendientes. ¡Disfruta de tu tiempo libre! 🏖️</p>
+          <div className="text-center py-16 sm:py-20">
+            <p className="text-gray-600 italic text-sm sm:text-base">
+              No tienes tareas pendientes. ¡Disfruta de tu tiempo libre! 🏖️
+            </p>
           </div>
         )}
 
