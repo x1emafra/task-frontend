@@ -12,6 +12,7 @@ const resources = {
             completed: "Completed",
             pending: "Pending",
             all: "All",
+            search: "Search...",
         },
     },
     es: {
@@ -24,6 +25,7 @@ const resources = {
             completed: "Completadas",
             pending: "Pendientes",
             all: "Todas",
+            search: "Buscar...",
         },
     },
     sv: {
@@ -36,6 +38,7 @@ const resources = {
             completed: "Klara",
             pending: "Pågående",
             all: "Alla",
+            search: "Sök...",
         },
     },
 };

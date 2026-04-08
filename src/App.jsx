@@ -78,7 +78,8 @@ function App() {
             {/* 🌍 LANGUAGE */}
             <select
               onChange={(e) => i18n.changeLanguage(e.target.value)}
-              className="text-sm bg-transparent"
+              className={`text-sm bg-transparent border-none cursor-pointer outline-none ${dark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
+              defaultValue={i18n.language}
             >
               <option value="en">EN</option>
               <option value="es">ES</option>
@@ -86,12 +87,18 @@ function App() {
             </select>
 
             {/* 🌗 THEME */}
-            <button onClick={() => setDark(!dark)}>
+            <button
+              onClick={() => setDark(!dark)}
+              className={`p-2 rounded-full transition-all ${dark ? "bg-gray-800 text-yellow-400 hover:bg-gray-700" : "bg-gray-200 text-indigo-600 hover:bg-gray-300"}`}
+            >
               {dark ? "☀️" : "🌙"}
             </button>
 
             {/* LOGOUT */}
-            <button onClick={() => supabase.auth.signOut()}>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${dark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-black shadow-sm"}`}
+            >
               {t("logout")}
             </button>
           </div>
@@ -106,17 +113,31 @@ function App() {
 
         {/* 🔎 SEARCH */}
         <input
-          placeholder="Search..."
+          placeholder={t("search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full mb-4 px-4 py-2 rounded-lg border"
+          className={`w-full mb-4 px-4 py-2 rounded-lg border transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/50 ${dark
+              ? "bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
+              : "bg-white border-gray-200 text-black placeholder-gray-400 focus:border-blue-400"
+            }`}
         />
 
         {/* 🧠 FILTERS */}
         <div className="flex gap-2 mb-6">
-          <button onClick={() => setFilter("all")}>{t("all")}</button>
-          <button onClick={() => setFilter("pending")}>{t("pending")}</button>
-          <button onClick={() => setFilter("completed")}>{t("completed")}</button>
+          {["all", "pending", "completed"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded-md text-sm transition-all ${filter === f
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                  : dark
+                    ? "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+                    : "bg-gray-200 text-gray-600 hover:bg-gray-300 hover:text-gray-900"
+                }`}
+            >
+              {t(f)}
+            </button>
+          ))}
         </div>
 
         {/* INPUT */}
@@ -126,10 +147,15 @@ function App() {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder={t("placeholder")}
-            className={`flex-1 px-4 py-3 rounded-lg border ${dark ? 'bg-gray-900 text-white' : 'bg-white text-black'
+            className={`flex-1 px-4 py-3 rounded-lg border transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/50 ${dark
+                ? "bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
+                : "bg-white border-gray-200 text-black placeholder-gray-400 focus:border-blue-400"
               }`}
           />
-          <button onClick={handleAdd}>
+          <button
+            onClick={handleAdd}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all transform active:scale-95 shadow-lg shadow-blue-500/20"
+          >
             {t("add")}
           </button>
         </div>
@@ -150,18 +176,40 @@ function App() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
-                          className="p-3 mb-2 rounded-lg border flex justify-between"
+                          className={`p-4 mb-3 rounded-xl border transition-all duration-200 flex justify-between items-center group ${dark
+                              ? "bg-gray-900/50 border-gray-800 hover:border-gray-700 hover:bg-gray-800"
+                              : "bg-white border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md"
+                            }`}
                         >
-                          <span onClick={() => handleToggle(t)}>
-                            {t.title}
-                          </span>
+                          <div
+                            className="flex items-center gap-3 cursor-pointer flex-1"
+                            onClick={() => handleToggle(t)}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${t.completed
+                                ? "bg-green-500 border-green-500"
+                                : "border-gray-400 group-hover:border-blue-500"
+                              }`}>
+                              {t.completed && <span className="text-white text-xs">✔</span>}
+                            </div>
+                            <span className={`transition-all ${t.completed ? "line-through opacity-50" : ""}`}>
+                              {t.title}
+                            </span>
+                          </div>
 
-                          <div className="flex gap-2">
-                            <button onClick={() => setShareModal({ open: true, taskId: t.id })}>
-                              Share
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => setShareModal({ open: true, taskId: t.id })}
+                              className={`p-2 rounded-lg transition-colors ${dark ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                              title="Share"
+                            >
+                              🔗
                             </button>
-                            <button onClick={() => setConfirmModal({ open: true, taskId: t.id })}>
-                              Delete
+                            <button
+                              onClick={() => setConfirmModal({ open: true, taskId: t.id })}
+                              className={`p-2 rounded-lg transition-colors ${dark ? "hover:bg-red-900/30 text-red-400" : "hover:bg-red-50 text-red-500"}`}
+                              title="Delete"
+                            >
+                              🗑
                             </button>
                           </div>
                         </motion.div>
