@@ -11,6 +11,8 @@ import { Toaster } from "react-hot-toast";
 import ConfirmModal from "./components/ConfirmModal";
 import ShareModal from "./components/ShareModal";
 import { useTasks } from "./hooks/useTasks";
+import { useTranslation } from "react-i18next";
+import i18n from "./i18n";
 
 function App() {
   const {
@@ -26,6 +28,8 @@ function App() {
     handleDragEnd,
   } = useTasks();
 
+  const { t } = useTranslation();
+
   const [confirmModal, setConfirmModal] = useState({ open: false, taskId: null });
   const [shareModal, setShareModal] = useState({ open: false, taskId: null });
 
@@ -37,6 +41,20 @@ function App() {
   useEffect(() => {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
+
+  // 🔎 SEARCH + FILTER
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filteredTasks = tasks
+    .filter((t) => {
+      if (filter === "completed") return t.completed;
+      if (filter === "pending") return !t.completed;
+      return true;
+    })
+    .filter((t) =>
+      t.title.toLowerCase().includes(search.toLowerCase())
+    );
 
   if (!session) return <Auth />;
 
@@ -50,47 +68,68 @@ function App() {
         <Toaster position="top-right" />
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Task App
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-semibold">
+            {t("title")}
           </h1>
 
-          <div className="flex items-center gap-4">
-            {/* TOGGLE */}
-            <button
-              onClick={() => setDark(!dark)}
-              className="text-sm opacity-70 hover:opacity-100 transition"
+          <div className="flex items-center gap-3">
+
+            {/* 🌍 LANGUAGE */}
+            <select
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              className="text-sm bg-transparent"
             >
+              <option value="en">EN</option>
+              <option value="es">ES</option>
+              <option value="sv">SV</option>
+            </select>
+
+            {/* 🌗 THEME */}
+            <button onClick={() => setDark(!dark)}>
               {dark ? "☀️" : "🌙"}
             </button>
 
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="text-sm opacity-70 hover:opacity-100 transition"
-            >
-              Logout
+            {/* LOGOUT */}
+            <button onClick={() => supabase.auth.signOut()}>
+              {t("logout")}
             </button>
           </div>
         </div>
 
+        {/* 📊 DASHBOARD */}
+        <div className="flex gap-4 mb-4 text-sm opacity-70">
+          <span>Total: {tasks.length}</span>
+          <span>✔ {tasks.filter(t => t.completed).length}</span>
+          <span>⏳ {tasks.filter(t => !t.completed).length}</span>
+        </div>
+
+        {/* 🔎 SEARCH */}
+        <input
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded-lg border"
+        />
+
+        {/* 🧠 FILTERS */}
+        <div className="flex gap-2 mb-6">
+          <button onClick={() => setFilter("all")}>{t("all")}</button>
+          <button onClick={() => setFilter("pending")}>{t("pending")}</button>
+          <button onClick={() => setFilter("completed")}>{t("completed")}</button>
+        </div>
+
         {/* INPUT */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="What needs to be done?"
-            className={`flex-1 min-w-0 px-4 py-3 rounded-lg border transition ${dark
-                ? "bg-gray-900 border-gray-800 focus:ring-red-500/40"
-                : "bg-white border-gray-300"
-              }`}
+            placeholder={t("placeholder")}
+            className="flex-1 px-4 py-3 rounded-lg border"
           />
-          <button
-            onClick={handleAdd}
-            disabled={!title.trim()}
-            className="px-6 py-3 rounded-lg bg-red-500 hover:bg-red-400 disabled:opacity-30 transition"
-          >
-            Add
+          <button onClick={handleAdd}>
+            {t("add")}
           </button>
         </div>
 
@@ -98,69 +137,29 @@ function App() {
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="tasks">
             {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="space-y-2"
-              >
+              <div ref={provided.innerRef} {...provided.droppableProps}>
                 <AnimatePresence>
-                  {tasks.map((t, index) => (
-                    <Draggable
-                      key={t.id}
-                      draggableId={String(t.id)}
-                      index={index}
-                    >
-                      {(provided, snapshot) => (
+                  {filteredTasks.map((t, index) => (
+                    <Draggable key={t.id} draggableId={String(t.id)} index={index}>
+                      {(provided) => (
                         <motion.div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          initial={{ opacity: 0, y: 8 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          whileHover={{ scale: 1.01 }}
-                          className={`p-3 rounded-lg flex justify-between items-center transition ${dark
-                              ? "bg-gray-900 hover:bg-gray-800"
-                              : "bg-white hover:bg-gray-50 border"
-                            }`}
+                          exit={{ opacity: 0 }}
+                          className="p-3 mb-2 rounded-lg border flex justify-between"
                         >
-                          <div
-                            onClick={() => handleToggle(t)}
-                            className="flex gap-3 items-center cursor-pointer flex-1 min-w-0"
-                          >
-                            <div
-                              className={`w-5 h-5 border rounded ${t.completed
-                                  ? "bg-green-500 border-green-500"
-                                  : "border-gray-400"
-                                }`}
-                            />
-                            <span
-                              className={`truncate ${t.completed
-                                  ? "line-through opacity-40"
-                                  : ""
-                                }`}
-                            >
-                              {t.title}
-                            </span>
-                          </div>
+                          <span onClick={() => handleToggle(t)}>
+                            {t.title}
+                          </span>
 
                           <div className="flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShareModal({ open: true, taskId: t.id });
-                              }}
-                              className="opacity-50 hover:opacity-100"
-                            >
+                            <button onClick={() => setShareModal({ open: true, taskId: t.id })}>
                               Share
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setConfirmModal({ open: true, taskId: t.id });
-                              }}
-                              className="opacity-50 hover:opacity-100"
-                            >
+                            <button onClick={() => setConfirmModal({ open: true, taskId: t.id })}>
                               Delete
                             </button>
                           </div>
@@ -176,9 +175,9 @@ function App() {
         </DragDropContext>
 
         {/* EMPTY */}
-        {!loading && tasks.length === 0 && (
-          <div className="text-center py-16 opacity-50">
-            No tasks yet
+        {!loading && filteredTasks.length === 0 && (
+          <div className="text-center py-10 opacity-50">
+            {t("empty")}
           </div>
         )}
 
