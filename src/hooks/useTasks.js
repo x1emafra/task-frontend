@@ -50,12 +50,19 @@ export function useTasks() {
   const handleAdd = async () => {
     if (!title.trim()) return;
 
-    const tempId = `temp-${Date.now()}`;
-    const tempTask = { id: tempId, title, completed: false };
+    const handleAdd = async () => {
+      if (!title.trim()) return;
 
-    setTasks((prev) => [tempTask, ...prev]);
-    setTitle("");
+      const user = supabase.auth.getUser();
 
+      await supabase.from("tasks").insert({
+        title,
+        completed: false,
+        user_id: (await user).data.user.id,
+      });
+
+      setTitle("");
+    };
     try {
       const created = await createTask({ title });
       setTasks((prev) =>
