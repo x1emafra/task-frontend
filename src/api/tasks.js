@@ -7,19 +7,19 @@ const API_URL = 'https://task-api-emanuel.onrender.com/api';
    GET TASKS
 ========================= */
 export const getTasks = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    const response = await CapacitorHttp.get({
-      url: `${API_URL}/tasks`,
-      params: { userId: String(user?.id ?? '') }
-    });
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', user.id);
 
-    return response.data;
-  } catch (error) {
-    console.error("GET ERROR:", error);
+  if (error) {
+    console.error(error);
     throw error;
   }
+
+  return data;
 };
 
 /* =========================

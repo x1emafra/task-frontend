@@ -18,12 +18,12 @@ export function useTasks() {
   // AUTH
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
 
-        if (_event === "INITIAL_SESSION" || _event === "SIGNED_IN") {
-          if (session?.user?.id) loadTasks();
-        } else if (_event === "SIGNED_OUT") {
+        if (session?.user?.id) {
+          await loadTasks();
+        } else {
           setTasks([]);
         }
       }
@@ -36,8 +36,12 @@ export function useTasks() {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const data = await getTasks();
+      const user = await supabase.auth.getUser();
+      const userId = user.data.user.id;
+
+      const data = await getTasks(userId); // 👈 ahora correcto
       setTasks(data);
+
     } catch (error) {
       console.error(error);
       toast.error("Error cargando tareas");
@@ -50,28 +54,22 @@ export function useTasks() {
   const handleAdd = async () => {
     if (!title.trim()) return;
 
-    const handleAdd = async () => {
-      if (!title.trim()) return;
+    try {
+      const user = await supabase.auth.getUser();
+      const userId = user.data.user.id;
 
-      const user = supabase.auth.getUser();
-
-      await supabase.from("tasks").insert({
+      const created = await createTask({
         title,
         completed: false,
-        user_id: (await user).data.user.id,
+        user_id: userId,
       });
 
+      setTasks((prev) => [...prev, created]);
       setTitle("");
-    };
-    try {
-      const created = await createTask({ title });
-      setTasks((prev) =>
-        prev.map((t) => (t.id === tempId ? created : t))
-      );
       toast.success("Tarea creada");
+
     } catch (error) {
       console.error(error);
-      setTasks((prev) => prev.filter((t) => t.id !== tempId));
       toast.error("Error creando");
     }
   };
@@ -97,7 +95,7 @@ export function useTasks() {
 
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === task.id ? { ...t, completed: !t.completed } : t
+        t.id === task.id ? { ...t, completed: !task.completed } : t
       )
     );
 
