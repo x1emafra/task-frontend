@@ -28,29 +28,30 @@ export const getTasks = async () => {
 export const createTask = async ({ title }) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
 
     if (!user) throw new Error("User not authenticated");
 
-    console.log("👤 USER:", user.id);
-    console.log("📝 TITLE:", title);
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([
+        {
+          title,
+          completed: false,
+          user_id: user.id,
+        }
+      ])
+      .select()
+      .single();
 
-    const response = await CapacitorHttp.post({
-      url: `${API_URL}/tasks`,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`,
-      },
-      data: {
-        title,
-        userId: user.id,
-      }
-    });
+    if (error) {
+      console.error("❌ INSERT ERROR:", error);
+      throw error;
+    }
 
-    console.log("✅ RESPONSE:", response);
-    return response.data;
+    return data;
+
   } catch (error) {
-    console.error("❌ POST ERROR:", error);
+    console.error("❌ CREATE ERROR:", error);
     throw error;
   }
 };
@@ -58,19 +59,24 @@ export const createTask = async ({ title }) => {
 /* =========================
    UPDATE TASK
 ========================= */
-export const updateTask = async (id, data) => {
+export const updateTask = async (id, updates) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    const response = await CapacitorHttp.put({
-      url: `${API_URL}/tasks/${id}`,
-      headers: { 'Content-Type': 'application/json' },
-      data: { ...data, userId: user?.id }
-    });
+    if (error) {
+      console.error("❌ UPDATE ERROR:", error);
+      throw error;
+    }
 
-    return response.data;
+    return data;
+
   } catch (error) {
-    console.error("UPDATE ERROR:", error);
+    console.error("❌ UPDATE FAILED:", error);
     throw error;
   }
 };
@@ -80,16 +86,20 @@ export const updateTask = async (id, data) => {
 ========================= */
 export const deleteTask = async (id) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
 
-    const response = await CapacitorHttp.delete({
-      url: `${API_URL}/tasks/${id}`,
-      params: { userId: String(user?.id ?? '') }
-    });
+    if (error) {
+      console.error("❌ DELETE ERROR:", error);
+      throw error;
+    }
 
-    return response.data;
+    return true;
+
   } catch (error) {
-    console.error("DELETE ERROR:", error);
+    console.error("❌ DELETE FAILED:", error);
     throw error;
   }
 };
