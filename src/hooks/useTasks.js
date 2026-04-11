@@ -26,7 +26,7 @@ export function useTasks() {
 
     try {
       const { data, error } = await supabase
-        .from("tasks")
+        .from("Task")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
@@ -106,7 +106,7 @@ export function useTasks() {
 
     try {
       const { error } = await supabase
-        .from("tasks")
+        .from("Task")
         .insert([
           {
             title: newTitle,
@@ -140,7 +140,7 @@ export function useTasks() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
-      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      const { error } = await supabase.from("Task").delete().eq("id", id);
       if (error) throw error;
       addLog("✅ Task deleted", id);
       toast.success("Tarea eliminada");
@@ -164,7 +164,7 @@ export function useTasks() {
 
     try {
       const { error } = await supabase
-        .from("tasks")
+        .from("Task")
         .update({ completed: newStatus })
         .eq("id", task.id);
 
@@ -220,7 +220,7 @@ export function useTasks() {
         completed: item.completed,
       }));
 
-      const { error } = await supabase.from("tasks").upsert(updates);
+      const { error } = await supabase.from("Task").upsert(updates);
       if (error) throw error;
       addLog("✅ Reorder success");
     } catch (error) {
