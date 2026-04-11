@@ -100,7 +100,7 @@ function App() {
 
             {/* LOGOUT */}
             <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={handleLogout}
               className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${dark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-black shadow-sm"}`}
             >
               {t("logout")}

@@ -99,10 +99,13 @@ export function useTasks() {
 
     const newTitle = title.trim();
     setTitle(""); 
-    addLog("➕ Creating task", { title: newTitle });
+    addLog("➕ Creating task (simple mode)", { title: newTitle });
+
+    // Timeout log for debugging hangs
+    const timeout = setTimeout(() => addLog("⌛ Task creation taking too long..."), 5000);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("tasks")
         .insert([
           {
@@ -110,17 +113,19 @@ export function useTasks() {
             completed: false,
             user_id: session.user.id,
           },
-        ])
-        .select()
-        .single();
+        ]);
 
+      clearTimeout(timeout);
       if (error) throw error;
 
-      addLog("✅ Task created", data?.id);
-      setTasks((prev) => [...prev, data]);
+      addLog("✅ Task created successfully");
       setLastError(null);
       toast.success("Tarea creada");
+      
+      // Re-fetch to update UI (safer than optimistic in some mobile environments)
+      await loadTasks(session.user.id);
     } catch (error) {
+      clearTimeout(timeout);
       addLog("❌ Create error", error);
       setLastError({ op: "handleAdd", error });
       setTitle(newTitle); 
@@ -224,6 +229,23 @@ export function useTasks() {
     }
   };
 
+  // 🚪 LOGOUT
+  const handleLogout = async () => {
+    addLog("🚪 Logout requested");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      addLog("✅ Logout success");
+    } catch (error) {
+      addLog("❌ Logout error", error);
+      setLastError({ op: "logout", error });
+      // Force local cleanup anyway
+      localStorage.clear();
+      setSession(null);
+      setTasks([]);
+    }
+  };
+
   // 🧹 RESET
   const handleReset = async () => {
     addLog("🧹 Resetting app data...");
@@ -248,6 +270,7 @@ export function useTasks() {
     handleToggle,
     handleShare,
     handleDragEnd,
+    handleLogout,
     lastError,
     debugLogs,
     handleReset,
