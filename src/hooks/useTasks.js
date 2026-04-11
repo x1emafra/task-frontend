@@ -7,6 +7,7 @@ export function useTasks() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState(null);
 
   // 🔐 AUTH & INITIALIZATION
   useEffect(() => {
@@ -66,6 +67,7 @@ export function useTasks() {
       setTasks(data || []);
     } catch (error) {
       console.error("❌ Load tasks error:", error);
+      setLastError({ op: "loadTasks", error });
       toast.error("Error cargando tareas");
     } finally {
       setLoading(false);
@@ -95,9 +97,11 @@ export function useTasks() {
       if (error) throw error;
 
       setTasks((prev) => [...prev, data]);
+      setLastError(null);
       toast.success("Tarea creada");
     } catch (error) {
       console.error("❌ Create error:", error);
+      setLastError({ op: "handleAdd", error });
       setTitle(newTitle); // Restore on error
       toast.error("Error al crear tarea");
     }
@@ -202,5 +206,6 @@ export function useTasks() {
     handleToggle,
     handleShare,
     handleDragEnd,
+    lastError,
   };
 }

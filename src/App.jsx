@@ -26,12 +26,14 @@ function App() {
     handleToggle,
     handleShare,
     handleDragEnd,
+    lastError,
   } = useTasks();
 
   const { t } = useTranslation();
 
   const [confirmModal, setConfirmModal] = useState({ open: false, taskId: null });
   const [shareModal, setShareModal] = useState({ open: false, taskId: null });
+  const [showDebug, setShowDebug] = useState(false);
 
   // 🌗 THEME
   const [dark, setDark] = useState(() => {
@@ -248,6 +250,35 @@ function App() {
           }}
           onClose={() => setShareModal({ open: false, taskId: null })}
         />
+
+        {/* 🐛 DEBUG PANEL */}
+        <div className="mt-10 border-t border-gray-800 pt-6 opacity-30 hover:opacity-100 transition-opacity pb-10">
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="text-xs font-mono uppercase tracking-widest mb-2"
+          >
+            {showDebug ? "Hide Debug" : "Show Debug"}
+          </button>
+          {showDebug && (
+            <div className="bg-black/50 p-4 rounded-lg font-mono text-[10px] overflow-auto max-h-60 border border-gray-800">
+              <p className="text-blue-400 mb-2">--- DEBUG INFO ---</p>
+              <p>User ID: {session?.user?.id || "None"}</p>
+              <p>Email: {session?.user?.email || "None"}</p>
+              <p>Tasks: {tasks.length}</p>
+              <p>Loading: {String(loading)}</p>
+              {lastError ? (
+                <div className="mt-4 p-2 bg-red-900/20 border border-red-500/50 rounded">
+                  <p className="text-red-400 font-bold mb-1 underline">LAST ERROR ({lastError.op}):</p>
+                  <pre className="whitespace-pre-wrap text-red-300">
+                    {JSON.stringify(lastError.error, null, 2)}
+                  </pre>
+                </div>
+              ) : (
+                <p className="text-green-500 mt-2">No errors recorded.</p>
+              )}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
