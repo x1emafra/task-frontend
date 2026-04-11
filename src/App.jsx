@@ -23,6 +23,8 @@ function App() {
     loading,
     handleAdd,
     handleDelete,
+    handleToggle,
+    handleLogout,
     handleShare,
     handleDragEnd,
     lastError,
