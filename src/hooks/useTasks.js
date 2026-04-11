@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
 import toast from "react-hot-toast";
 
@@ -8,32 +8,74 @@ export function useTasks() {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastError, setLastError] = useState(null);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  // 📝 LOG HELPER
+  const addLog = useCallback((msg, data = null) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = `[${timestamp}] ${msg}${data ? ": " + JSON.stringify(data).substring(0, 100) : ""}`;
+    console.log(entry);
+    setDebugLogs((prev) => [entry, ...prev].slice(0, 20)); // Store last 20
+  }, []);
+
+  // 🔍 LOAD TASKS
+  const loadTasks = useCallback(async (userId) => {
+    if (!userId) return;
+    setLoading(true);
+    addLog("📡 Fetching tasks", { userId });
+
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      addLog("✅ Tasks loaded", data?.length);
+      setTasks(data || []);
+      setLastError(null);
+    } catch (error) {
+      addLog("❌ Load tasks error", error);
+      setLastError({ op: "loadTasks", error });
+      toast.error("Error cargando tareas");
+    } finally {
+      setLoading(false);
+    }
+  }, [addLog]);
 
   // 🔐 AUTH & INITIALIZATION
   useEffect(() => {
-    // 1. Check current session on mount
+    addLog("🚀 App mounting");
+
     const initSession = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log("🔄 Initial session check:", currentSession?.user?.email);
+        addLog("⏳ Checking session...");
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+
+        addLog("👤 Session result", currentSession?.user?.email || "No session");
         setSession(currentSession);
+        
         if (currentSession?.user) {
           await loadTasks(currentSession.user.id);
         } else {
           setLoading(false);
         }
       } catch (error) {
-        console.error("❌ Session init error:", error);
+        addLog("❌ Session init error", error);
+        setLastError({ op: "initSession", error });
         setLoading(false);
       }
     };
 
     initSession();
 
-    // 2. Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("🔔 Auth event:", event, currentSession?.user?.email);
+        addLog("🔔 Auth event", { event, email: currentSession?.user?.email });
         setSession(currentSession);
 
         if (currentSession?.user) {
@@ -46,40 +88,18 @@ export function useTasks() {
     );
 
     return () => listener.subscription.unsubscribe();
-  }, []);
-
-  // 🔍 LOAD TASKS
-  const loadTasks = async (userId) => {
-    if (!userId) return;
-    setLoading(true);
-    console.log("📡 Fetching tasks for:", userId);
-
-    try {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      console.log("✅ Tasks loaded:", data?.length || 0);
-      setTasks(data || []);
-    } catch (error) {
-      console.error("❌ Load tasks error:", error);
-      setLastError({ op: "loadTasks", error });
-      toast.error("Error cargando tareas");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadTasks, addLog]);
 
   // ➕ CREATE
   const handleAdd = async () => {
-    if (!title.trim() || !session?.user) return;
+    if (!title.trim() || !session?.user) {
+      addLog("⚠️ Cannot create", { title, hasUser: !!session?.user });
+      return;
+    }
 
     const newTitle = title.trim();
-    setTitle(""); // Optimistic clear
+    setTitle(""); 
+    addLog("➕ Creating task", { title: newTitle });
 
     try {
       const { data, error } = await supabase
@@ -96,28 +116,32 @@ export function useTasks() {
 
       if (error) throw error;
 
+      addLog("✅ Task created", data?.id);
       setTasks((prev) => [...prev, data]);
       setLastError(null);
       toast.success("Tarea creada");
     } catch (error) {
-      console.error("❌ Create error:", error);
+      addLog("❌ Create error", error);
       setLastError({ op: "handleAdd", error });
-      setTitle(newTitle); // Restore on error
+      setTitle(newTitle); 
       toast.error("Error al crear tarea");
     }
   };
 
   // 🗑️ DELETE
   const handleDelete = async (id) => {
+    addLog("🗑️ Deleting task", id);
     const previous = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
+      addLog("✅ Task deleted", id);
       toast.success("Tarea eliminada");
     } catch (error) {
-      console.error("❌ Delete error:", error);
+      addLog("❌ Delete error", error);
+      setLastError({ op: "handleDelete", error });
       setTasks(previous);
       toast.error("Error al eliminar");
     }
@@ -125,6 +149,7 @@ export function useTasks() {
 
   // ✅ TOGGLE
   const handleToggle = async (task) => {
+    addLog("🔘 Toggle task", { id: task.id, completed: !task.completed });
     const previous = tasks;
     const newStatus = !task.completed;
 
@@ -139,8 +164,10 @@ export function useTasks() {
         .eq("id", task.id);
 
       if (error) throw error;
+      addLog("✅ Toggle result: success");
     } catch (error) {
-      console.error("❌ Toggle error:", error);
+      addLog("❌ Toggle error", error);
+      setLastError({ op: "handleToggle", error });
       setTasks(previous);
       toast.error("Error al actualizar");
     }
@@ -148,8 +175,8 @@ export function useTasks() {
 
   // 📤 SHARE
   const handleShare = async (taskId, email) => {
+    addLog("📤 Sharing task", { taskId, email });
     try {
-      // Asumimos tabla 'shared_tasks' con task_id y user_email
       const { error } = await supabase.from("shared_tasks").insert([
         {
           task_id: taskId,
@@ -158,9 +185,11 @@ export function useTasks() {
       ]);
 
       if (error) throw error;
+      addLog("✅ Share result: success");
       toast.success("Tarea compartida con " + email);
     } catch (error) {
-      console.error("❌ Share error:", error);
+      addLog("❌ Share error", error);
+      setLastError({ op: "handleShare", error });
       toast.error("Error al compartir");
     }
   };
@@ -168,6 +197,7 @@ export function useTasks() {
   // 🏗️ DRAG & DROP
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
+    addLog("🏗️ Drag end", { from: result.source.index, to: result.destination.index });
 
     const items = Array.from(tasks);
     const [moved] = items.splice(result.source.index, 1);
@@ -177,8 +207,6 @@ export function useTasks() {
     setTasks(items);
 
     try {
-      // Aktualiza el orden en Supabase (si existe columna 'order')
-      // Si no existe, esto fallará silenciosamente o dará error en consola
       const updates = items.map((item, index) => ({
         id: item.id,
         user_id: session.user.id,
@@ -189,10 +217,24 @@ export function useTasks() {
 
       const { error } = await supabase.from("tasks").upsert(updates);
       if (error) throw error;
+      addLog("✅ Reorder success");
     } catch (error) {
-      console.error("❌ Reorder error:", error);
-      // No revertimos aquí por UX, pero informamos si es crítico
+      addLog("❌ Reorder error", error);
+      setLastError({ op: "handleDragEnd", error });
     }
+  };
+
+  // 🧹 RESET
+  const handleReset = async () => {
+    addLog("🧹 Resetting app data...");
+    localStorage.clear();
+    try {
+      await supabase.auth.signOut();
+      addLog("✅ Sign out success");
+    } catch (e) {
+      addLog("⚠️ Sign out failed, reloading anyway", e);
+    }
+    window.location.reload();
   };
 
   return {
@@ -207,5 +249,8 @@ export function useTasks() {
     handleShare,
     handleDragEnd,
     lastError,
+    debugLogs,
+    handleReset,
+    retryLoad: () => session?.user && loadTasks(session.user.id),
   };
 }

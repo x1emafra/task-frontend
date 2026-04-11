@@ -23,10 +23,12 @@ function App() {
     loading,
     handleAdd,
     handleDelete,
-    handleToggle,
     handleShare,
     handleDragEnd,
     lastError,
+    debugLogs,
+    handleReset,
+    retryLoad,
   } = useTasks();
 
   const { t } = useTranslation();
@@ -253,29 +255,57 @@ function App() {
 
         {/* 🐛 DEBUG PANEL */}
         <div className="mt-10 border-t border-gray-800 pt-6 opacity-30 hover:opacity-100 transition-opacity pb-10">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="text-xs font-mono uppercase tracking-widest mb-2"
-          >
-            {showDebug ? "Hide Debug" : "Show Debug"}
-          </button>
+          <div className="flex justify-between items-center mb-2">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-xs font-mono uppercase tracking-widest"
+            >
+              {showDebug ? "Hide Debug" : "Show Debug"}
+            </button>
+            {showDebug && (
+              <div className="flex gap-2">
+                <button
+                  onClick={retryLoad}
+                  className="bg-blue-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="bg-red-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase"
+                >
+                  Reset App
+                </button>
+              </div>
+            )}
+          </div>
+
           {showDebug && (
-            <div className="bg-black/50 p-4 rounded-lg font-mono text-[10px] overflow-auto max-h-60 border border-gray-800">
-              <p className="text-blue-400 mb-2">--- DEBUG INFO ---</p>
+            <div className="bg-black/50 p-4 rounded-lg font-mono text-[10px] overflow-auto max-h-80 border border-gray-800">
+              <p className="text-blue-400 mb-2 font-bold underline">SYSTEM INFO</p>
               <p>User ID: {session?.user?.id || "None"}</p>
               <p>Email: {session?.user?.email || "None"}</p>
               <p>Tasks: {tasks.length}</p>
               <p>Loading: {String(loading)}</p>
-              {lastError ? (
+
+              {lastError && (
                 <div className="mt-4 p-2 bg-red-900/20 border border-red-500/50 rounded">
-                  <p className="text-red-400 font-bold mb-1 underline">LAST ERROR ({lastError.op}):</p>
+                  <p className="text-red-400 font-bold mb-1 underline text-xs">LAST ERROR ({lastError.op}):</p>
                   <pre className="whitespace-pre-wrap text-red-300">
                     {JSON.stringify(lastError.error, null, 2)}
                   </pre>
                 </div>
-              ) : (
-                <p className="text-green-500 mt-2">No errors recorded.</p>
               )}
+
+              <p className="text-blue-400 mt-4 mb-2 font-bold underline">EVENT LOG</p>
+              <div className="flex flex-col gap-1">
+                {debugLogs.map((log, i) => (
+                  <div key={i} className="border-l border-gray-700 pl-2">
+                    {log}
+                  </div>
+                ))}
+                {debugLogs.length === 0 && <p className="opacity-50 italic text-gray-400">No logs yet...</p>}
+              </div>
             </div>
           )}
         </div>
