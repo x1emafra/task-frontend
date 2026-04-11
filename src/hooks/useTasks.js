@@ -36,14 +36,19 @@ export function useTasks() {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const user = await supabase.auth.getUser();
-      const userId = user.data.user.id;
+      const { data: { user } } = await supabase.auth.getUser();
 
-      const data = await getTasks(userId); // 👈 ahora correcto
+      if (!user) {
+        console.log("❌ No user session");
+        setTasks([]);
+        return;
+      }
+
+      const data = await getTasks(user.id);
       setTasks(data);
 
     } catch (error) {
-      console.error(error);
+      console.error("❌ LOAD TASKS ERROR:", error);
       toast.error("Error cargando tareas");
     } finally {
       setLoading(false);
