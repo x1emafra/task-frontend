@@ -11,27 +11,30 @@ import { Toaster } from "react-hot-toast";
 import ConfirmModal from "./components/ConfirmModal";
 import ShareModal from "./components/ShareModal";
 import { useTasks } from "./hooks/useTasks";
+import { useAuth } from "./hooks/useAuth";
+import { useLogger } from "./hooks/useLogger";
 import { useTranslation } from "react-i18next";
 import i18n from "./i18n";
 
 function App() {
+  const logger = useLogger();
+  const { debugLogs, lastError, clearLogs } = logger;
+  const { session, loading: authLoading, handleLogout, handleReset } = useAuth(logger.addLog);
+  
   const {
-    session,
     tasks,
     title,
     setTitle,
-    loading,
+    loading: tasksLoading,
     handleAdd,
     handleDelete,
     handleToggle,
-    handleLogout,
     handleShare,
     handleDragEnd,
-    lastError,
-    debugLogs,
-    handleReset,
     retryLoad,
-  } = useTasks();
+  } = useTasks(session, logger);
+
+  const loading = authLoading || tasksLoading;
 
   const { t } = useTranslation();
 
@@ -271,6 +274,12 @@ function App() {
                   className="bg-blue-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase"
                 >
                   Retry
+                </button>
+                <button
+                  onClick={clearLogs}
+                  className="bg-gray-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase"
+                >
+                  Clear Logs
                 </button>
                 <button
                   onClick={handleReset}
