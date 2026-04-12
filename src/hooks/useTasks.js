@@ -37,7 +37,7 @@ export function useTasks(session, logger) {
   }, [session?.user?.id, loadTasks]);
 
   // ➕ CREATE
-  const handleAdd = async () => {
+  const handleAdd = async (selectedDate) => {
     if (!title.trim() || !session?.user?.id) {
       addLog("⚠️ Cannot create", { title, hasUser: !!session?.user });
       return;
@@ -48,8 +48,9 @@ export function useTasks(session, logger) {
     addLog("➕ Creating task", { title: newTitle });
 
     try {
-      await taskService.addTask(newTitle, session.user.id);
-      addLog("✅ Task created successfully");
+      const taskDate = selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      await taskService.addTask(newTitle, session.user.id, taskDate);
+      addLog("✅ Task created successfully", { date: taskDate });
       clearError();
       toast.success("Tarea creada");
       await loadTasks();

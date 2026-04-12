@@ -12,7 +12,7 @@ export const taskService = {
     return data || [];
   },
 
-  async addTask(title, userId) {
+  async addTask(title, userId, date) {
     const { data, error } = await supabase
       .from("Task")
       .insert([
@@ -20,6 +20,7 @@ export const taskService = {
           title,
           completed: false,
           user_id: userId,
+          date: date || new Date().toISOString().split('T')[0],
         },
       ])
       .select();

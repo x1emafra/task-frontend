@@ -1,10 +1,11 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 
 export default function Auth() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState(""); // ⬅️ Nuevo campo
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState({ loading: false, message: "", error: false });
@@ -54,6 +55,11 @@ export default function Auth() {
     const { error } = await supabase.auth.signUp({
       email: clean,
       password,
+      options: {
+        data: {
+          full_name: fullName.trim() || undefined
+        }
+      }
     });
 
     if (error) {
@@ -72,6 +78,13 @@ export default function Auth() {
           {status.message}
         </p>
       )}
+
+      <input
+        className="w-full mb-2 p-2 bg-gray-800 rounded text-white"
+        placeholder="Nombre completo (Solo para registro)"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
 
       <input
         className="w-full mb-2 p-2 bg-gray-800 rounded text-white"

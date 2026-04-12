@@ -70,6 +70,12 @@ function App() {
 
   const filteredTasks = tasks
     .filter((t) => {
+      // 📅 Filtrado por fecha del calendario
+      const taskDateStr = t.date ? new Date(t.date).toISOString().split('T')[0] : "";
+      const selectedDateStr = new Date(date).toISOString().split('T')[0];
+      return taskDateStr === selectedDateStr;
+    })
+    .filter((t) => {
       if (filter === "completed") return t.completed;
       if (filter === "pending") return !t.completed;
       return true;
@@ -211,7 +217,7 @@ function App() {
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd(date)}
                   placeholder={t("placeholder")}
                   className={`flex-1 px-5 py-3.5 rounded-2xl border transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/50 ${dark
                     ? "bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
@@ -219,7 +225,7 @@ function App() {
                     }`}
                 />
                 <button
-                  onClick={handleAdd}
+                  onClick={() => handleAdd(date)}
                   className="px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-500/20"
                 >
                   +
