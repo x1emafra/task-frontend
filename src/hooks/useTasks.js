@@ -53,12 +53,12 @@ export function useTasks() {
       try {
         addLog("⏳ Checking session...");
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
+
         if (error) throw error;
 
         addLog("👤 Session result", currentSession?.user?.email || "No session");
         setSession(currentSession);
-        
+
         if (currentSession?.user) {
           await loadTasks(currentSession.user.id);
         } else {
@@ -76,6 +76,7 @@ export function useTasks() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         addLog("🔔 Auth event", { event, email: currentSession?.user?.email });
+
         setSession(currentSession);
 
         if (currentSession?.user) {
@@ -88,7 +89,8 @@ export function useTasks() {
     );
 
     return () => listener.subscription.unsubscribe();
-  }, [loadTasks, addLog]);
+  }, []); // ✅ SOLO UNA VEZ
+
 
   // ➕ CREATE
   const handleAdd = async () => {
@@ -98,7 +100,7 @@ export function useTasks() {
     }
 
     const newTitle = title.trim();
-    setTitle(""); 
+    setTitle("");
     addLog("➕ Creating task (simple mode)", { title: newTitle });
 
     // Timeout log for debugging hangs
@@ -121,14 +123,14 @@ export function useTasks() {
       addLog("✅ Task created successfully");
       setLastError(null);
       toast.success("Tarea creada");
-      
+
       // Re-fetch to update UI (safer than optimistic in some mobile environments)
       await loadTasks(session.user.id);
     } catch (error) {
       clearTimeout(timeout);
       addLog("❌ Create error", error);
       setLastError({ op: "handleAdd", error });
-      setTitle(newTitle); 
+      setTitle(newTitle);
       toast.error("Error al crear tarea");
     }
   };
