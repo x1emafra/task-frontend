@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Share2 } from "lucide-react";
 
 export default function ShareModal({ open, onShare, onClose }) {
   const [email, setEmail] = useState("");
@@ -20,48 +21,60 @@ export default function ShareModal({ open, onShare, onClose }) {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-80 shadow-2xl"
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="bg-gray-950 border border-white/10 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-3xl mb-3">📤</div>
-            <h2 className="text-lg font-semibold text-white mb-1">
-              Compartir tarea
-            </h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Ingresa el email del usuario con quien quieres compartir.
-            </p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@email.com"
-                autoFocus
-                className="bg-gray-800 px-4 py-2 rounded-lg text-white outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
-              />
-              <div className="flex gap-3 justify-end">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-blue-500/10 text-blue-500 rounded-3xl border border-blue-500/20">
+                <Share2 size={32} />
+              </div>
+            </div>
+
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Compartir tarea
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Colabora con otros usuarios ingresando su dirección de correo electrónico.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Email del colaborador</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="usuario@email.com"
+                  autoFocus
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:ring-4 focus:ring-blue-500/20 transition-all placeholder:text-gray-600 shadow-inner"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
+                  className="flex-1 px-6 py-3.5 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition-all font-bold text-sm order-2 sm:order-1"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={!email.trim()}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm font-medium disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3.5 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-bold text-sm shadow-xl shadow-blue-500/30 order-1 sm:order-2 disabled:bg-gray-800 disabled:text-gray-500 disabled:shadow-none"
                 >
                   Compartir
                 </button>

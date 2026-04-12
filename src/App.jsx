@@ -17,6 +17,28 @@ import { useAuth } from "./hooks/useAuth";
 import { useLogger } from "./hooks/useLogger";
 import { useTranslation } from "react-i18next";
 import i18n from "./i18n";
+import { 
+  User, 
+  Languages, 
+  Moon, 
+  Sun, 
+  LogOut, 
+  Search, 
+  CheckCircle2, 
+  List, 
+  Clock, 
+  Calendar as CalendarIcon, 
+  Plus, 
+  Share2, 
+  Trash2, 
+  Check, 
+  AlertTriangle,
+  FileText,
+  Terminal,
+  RotateCcw,
+  Eraser,
+  X
+} from "lucide-react";
 
 function App() {
   const logger = useLogger();
@@ -108,72 +130,86 @@ function App() {
   if (!session) return <Auth />;
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 overflow-x-hidden ${dark
+    <div className={`min-h-screen transition-colors duration-500 overflow-hidden ${dark
       ? "bg-gradient-to-br from-black via-gray-900 to-black text-white"
       : "bg-gradient-to-br from-gray-100 via-white to-gray-200 text-gray-900"
-      } flex items-center justify-center p-4`}>
+      } flex items-center justify-center p-2 sm:p-4`}>
 
       <Toaster position="top-right" />
 
-      <div className={`w-full max-w-5xl backdrop-blur-xl rounded-3xl p-6 shadow-2xl border transition-all duration-300 ${dark
+      <div className={`w-[95vw] h-[92vh] backdrop-blur-3xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl border transition-all duration-300 flex flex-col ${dark
         ? "bg-white/5 border-white/10"
-        : "bg-white/70 border-gray-200"
+        : "bg-white/80 border-gray-200 shadow-blue-500/5"
         }`}>
 
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-              {t("title") || "Hola"}, {username} 👋
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-sm font-medium ${dark ? "text-blue-400" : "text-blue-600"}`}>
-                {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </span>
-              <span className="text-gray-400 text-xs">•</span>
-              <span className="text-gray-400 text-xs font-mono uppercase tracking-wider">
-                {time.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-              </span>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-2xl ${dark ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
+              <User size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                {t("title") || "Hola"}, {username}
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <Clock size={14} className="text-blue-500" />
+                <span className={`text-sm font-semibold ${dark ? "text-blue-400" : "text-blue-600"}`}>
+                  {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <span className="text-gray-400 text-xs">•</span>
+                <CalendarIcon size={14} className="text-gray-400" />
+                <span className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+                  {time.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+                </span>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-            <div className="flex items-center gap-2 bg-black/10 dark:bg-white/5 p-1 rounded-xl">
-              {/* 🌍 LANGUAGE */}
+            <div className="flex items-center gap-2 bg-black/10 dark:bg-white/5 p-1 rounded-2xl">
+              <div className="flex items-center px-2 opacity-40">
+                <Languages size={14} />
+              </div>
               <select
                 onChange={(e) => i18n.changeLanguage(e.target.value)}
-                className={`text-xs bg-transparent border-none cursor-pointer outline-none font-bold px-2 ${dark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
+                className={`text-xs bg-transparent border-none cursor-pointer outline-none font-bold px-2 py-1.5 transition-colors ${dark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
                 defaultValue={i18n.language}
               >
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-                <option value="sv">SV</option>
+                <option value="en">ENGLISH</option>
+                <option value="es">ESPAÑOL</option>
+                <option value="sv">SVENSKA</option>
               </select>
-
-              {/* 🌗 THEME */}
-              <button
-                onClick={() => setDark(!dark)}
-                className={`p-2 rounded-lg transition-all ${dark ? "bg-gray-800 text-yellow-400 hover:bg-gray-700" : "bg-white text-indigo-600 hover:bg-gray-100 shadow-sm"}`}
-              >
-                {dark ? "☀️" : "🌙"}
-              </button>
             </div>
 
-            {/* LOGOUT */}
             <button
-              onClick={handleLogout}
-              className={`text-sm font-semibold px-4 py-2 rounded-xl transition-all ${dark
-                ? "bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white"
-                : "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
+              onClick={() => {
+                const newDark = !dark;
+                setDark(newDark);
+                localStorage.setItem("theme", newDark ? "dark" : "light");
+              }}
+              className={`p-3 rounded-2xl transition-all shadow-lg ${dark
+                ? "bg-white/5 text-yellow-400 hover:bg-white/10 shadow-yellow-500/5"
+                : "bg-white text-blue-600 hover:bg-gray-50 border border-gray-100 shadow-blue-500/5"
                 }`}
             >
-              {t("logout")}
+              {dark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className={`p-3 rounded-2xl transition-all shadow-lg ${dark
+                ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/10"
+                : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+                }`}
+            >
+              <LogOut size={20} />
             </button>
           </div>
         </div>
 
-        {/* GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* GRID CONTAINER (Extended) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
 
           {/* IZQUIERDA: TASK MANAGER (8 columns) */}
           <div className="lg:col-span-7 flex flex-col gap-6">
@@ -196,16 +232,18 @@ function App() {
               </div>
 
               <div className="relative flex items-center">
+                <div className="absolute left-4 opacity-40">
+                  <Search size={18} />
+                </div>
                 <input
                   placeholder={t("search")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className={`w-full h-full px-4 py-3 rounded-2xl border transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/50 ${dark
-                    ? "bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
-                    : "bg-white border-gray-200 text-black placeholder-gray-400 focus:border-blue-400"
+                  className={`w-full h-full pl-12 pr-4 py-3.5 rounded-2xl border transition-all duration-200 outline-none focus:ring-4 focus:ring-blue-500/20 ${dark
+                    ? "bg-gray-950 border-gray-800 text-white placeholder-gray-600 focus:border-blue-500/50"
+                    : "bg-white border-gray-200 text-black placeholder-gray-400 focus:border-blue-400 shadow-sm"
                     }`}
                 />
-                <span className="absolute right-4 opacity-30">🔍</span>
               </div>
             </div>
 
@@ -255,15 +293,16 @@ function App() {
                 />
                 <button
                   onClick={() => handleAdd(date)}
-                  className="px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-500/20"
+                  className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all transform active:scale-95 shadow-xl shadow-blue-500/30 flex items-center gap-2"
                 >
-                  +
+                  <Plus size={20} />
+                  <span className="hidden sm:inline">Añadir</span>
                 </button>
               </div>
             </div>
 
             {/* LIST */}
-            <div className={`flex-1 min-h-[400px] max-h-[500px] overflow-y-auto pr-2 custom-scrollbar`}>
+            <div className={`flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar`}>
               <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="tasks">
                   {(provided) => (
@@ -276,12 +315,12 @@ function App() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
+                                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                 transition={{ duration: 0.2 }}
                                 className={`p-4 rounded-2xl border transition-all duration-200 flex justify-between items-center group ${dark
-                                  ? "bg-white/5 border-white/5 hover:border-blue-500/30 hover:bg-white/10"
+                                  ? "bg-white/5 border-white/5 hover:border-blue-500/40 hover:bg-white/10"
                                   : "bg-white border-gray-100 hover:border-blue-200 shadow-sm hover:shadow-md"
                                   }`}
                               >
@@ -290,12 +329,12 @@ function App() {
                                   onClick={() => handleToggle(t)}
                                 >
                                   <div className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${t.completed
-                                    ? "bg-green-500 border-green-500 shadow-lg shadow-green-500/40"
+                                    ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/40"
                                     : dark ? "border-gray-700 group-hover:border-blue-500" : "border-gray-300 group-hover:border-blue-500"
                                     }`}>
-                                    {t.completed && <span className="text-white text-xs">✔</span>}
+                                    {t.completed && <Check size={14} className="text-white" />}
                                   </div>
-                                  <span className={`font-medium transition-all ${t.completed ? "line-through opacity-40" : ""}`}>
+                                  <span className={`font-semibold tracking-tight transition-all ${t.completed ? "line-through opacity-30" : ""}`}>
                                     {t.title}
                                   </span>
                                 </div>
@@ -303,15 +342,15 @@ function App() {
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setShareModal({ open: true, taskId: t.id }); }}
-                                    className={`p-2 rounded-xl transition-colors ${dark ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                                    className={`p-2.5 rounded-xl transition-all ${dark ? "hover:bg-gray-700 text-gray-400 hover:text-blue-400" : "hover:bg-gray-100 text-gray-500 hover:text-blue-600"}`}
                                   >
-                                    🔗
+                                    <Share2 size={18} />
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, taskId: t.id }); }}
-                                    className={`p-2 rounded-xl transition-colors ${dark ? "hover:bg-red-900/40 text-red-400" : "hover:bg-red-50 text-red-500"}`}
+                                    className={`p-2.5 rounded-xl transition-all ${dark ? "hover:bg-red-900/40 text-red-400" : "hover:bg-red-50 text-red-500"}`}
                                   >
-                                    🗑
+                                    <Trash2 size={18} />
                                   </button>
                                 </div>
                               </motion.div>
@@ -327,9 +366,11 @@ function App() {
 
               {/* EMPTY */}
               {!loading && filteredTasks.length === 0 && (
-                <div className="text-center py-20 opacity-30 flex flex-col items-center gap-2">
-                  <span className="text-4xl">📝</span>
-                  <p className="font-medium">{t("empty")}</p>
+                <div className="h-full flex flex-col items-center justify-center opacity-20 py-20 animate-pulse">
+                  <div className="mb-4">
+                    <FileText size={64} />
+                  </div>
+                  <p className="font-bold uppercase tracking-[0.3em] text-xs">{t("no_tasks") || "NO TASKS"}</p>
                 </div>
               )}
             </div>
@@ -363,16 +404,35 @@ function App() {
             </div>
 
             {/* QUICK ACTIONS OR INFO */}
-            <div className={`p-6 rounded-3xl border ${dark ? "bg-blue-500/5 border-blue-500/10" : "bg-blue-50 border-blue-100"}`}>
-              <h3 className={`text-sm font-bold uppercase tracking-widest mb-2 ${dark ? "text-blue-400" : "text-blue-600"}`}>
-                Tip del día
+            <div className={`p-6 rounded-[2rem] border overflow-hidden relative group ${dark ? "bg-blue-600/10 border-blue-500/20" : "bg-blue-50 border-blue-100"}`}>
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <AlertTriangle size={64} />
+              </div>
+              <h3 className={`text-xs font-bold uppercase tracking-[0.2em] mb-3 ${dark ? "text-blue-400" : "text-blue-600"}`}>
+                Tip de productividad
               </h3>
-              <p className={`text-sm leading-relaxed ${dark ? "text-gray-300" : "text-gray-700"}`}>
-                Organiza tus tareas por prioridad para maximizar tu productividad hoy.
+              <p className={`text-sm leading-relaxed font-semibold ${dark ? "text-gray-300" : "text-gray-700"}`}>
+                Organiza tus tareas por prioridad para maximizar tu enfoque. Mantén la lista corta y accionable.
               </p>
             </div>
           </div>
+        </div>
 
+        {/* DEBUG & FOOTER (Extended) */}
+        <div className="mt-8 shrink-0 flex justify-between items-center opacity-40 hover:opacity-100 transition-opacity">
+          <p className="text-[9px] uppercase tracking-[0.3em] font-bold">
+            Task Dashboard Enterprise
+          </p>
+          
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className={`flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold transition-all ${showDebug ? "text-blue-500" : "text-gray-500 hover:text-white"}`}
+            >
+              <Terminal size={14} />
+              Console
+            </button>
+          </div>
         </div>
 
         {/* MODALS */}

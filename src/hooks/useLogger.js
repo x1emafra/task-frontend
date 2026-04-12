@@ -12,7 +12,7 @@ export function useLogger() {
   }, []);
 
   const reportError = useCallback((op, error) => {
-    addLog(`❌ ${op} error`, error);
+    addLog(`Task Operation error`, error);
     setLastError({ op, error });
   }, [addLog]);
 

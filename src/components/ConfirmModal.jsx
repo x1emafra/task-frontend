@@ -1,41 +1,50 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { Trash2 } from "lucide-react";
 
 export default function ConfirmModal({ open, onConfirm, onCancel }) {
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onCancel}
         >
           <motion.div
-            className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-80 shadow-2xl"
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="bg-gray-950 border border-white/10 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-3xl mb-3">🗑️</div>
-            <h2 className="text-lg font-semibold text-white mb-1">
-              ¿Eliminar tarea?
-            </h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Esta acción no se puede deshacer.
-            </p>
-            <div className="flex gap-3 justify-end">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20">
+                <Trash2 size={32} />
+              </div>
+            </div>
+            
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-white mb-2">
+                ¿Eliminar tarea?
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Esta acción es permanente y no se podrá recuperar la información.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
+                className="flex-1 px-6 py-3.5 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition-all font-bold text-sm order-2 sm:order-1"
               >
                 Cancelar
               </button>
               <button
                 onClick={onConfirm}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors text-sm font-medium"
+                className="flex-1 px-6 py-3.5 rounded-2xl bg-red-600 text-white hover:bg-red-700 transition-all font-bold text-sm shadow-lg shadow-red-500/20 order-1 sm:order-2"
               >
                 Eliminar
               </button>

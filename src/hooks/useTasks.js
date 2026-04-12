@@ -50,27 +50,27 @@ export function useTasks(session, logger) {
     try {
       const taskDate = selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       await taskService.addTask(newTitle, session.user.id, taskDate);
-      addLog("✅ Task created successfully", { date: taskDate });
+      addLog("Task created successfully", { date: taskDate });
       clearError();
       toast.success("Tarea creada");
       await loadTasks();
     } catch (error) {
-      addLog("❌ Create error", error);
+      addLog("Create error", error);
       reportError("handleAdd", error);
       setTitle(newTitle);
       toast.error("Error al crear tarea");
     }
   };
 
-  // 🗑️ DELETE
+  // DELETE
   const handleDelete = async (id) => {
-    addLog("🗑️ Deleting task", id);
+    addLog("Deleting task", id);
     const previous = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
       await taskService.deleteTask(id);
-      addLog("✅ Task deleted", id);
+      addLog("Task deleted", id);
       toast.success("Tarea eliminada");
     } catch (error) {
       reportError("handleDelete", error);
@@ -79,10 +79,10 @@ export function useTasks(session, logger) {
     }
   };
 
-  // ✅ TOGGLE
+  // TOGGLE
   const handleToggle = async (task) => {
     const newStatus = !task.completed;
-    addLog("🔘 Toggle task", { id: task.id, completed: newStatus });
+    addLog("Toggle task", { id: task.id, completed: newStatus });
     
     const previous = tasks;
     setTasks((prev) =>
@@ -91,7 +91,7 @@ export function useTasks(session, logger) {
 
     try {
       await taskService.toggleTask(task.id, newStatus);
-      addLog("✅ Toggle result: success");
+      addLog("Toggle result: success");
     } catch (error) {
       reportError("handleToggle", error);
       setTasks(previous);
@@ -99,12 +99,12 @@ export function useTasks(session, logger) {
     }
   };
 
-  // 📤 SHARE
+  // SHARE
   const handleShare = async (taskId, email) => {
-    addLog("📤 Sharing task", { taskId, email });
+    addLog("Sharing task", { taskId, email });
     try {
       await taskService.shareTask(taskId, email);
-      addLog("✅ Share result: success");
+      addLog("Share result: success");
       toast.success("Tarea compartida con " + email);
     } catch (error) {
       reportError("handleShare", error);
@@ -112,10 +112,10 @@ export function useTasks(session, logger) {
     }
   };
 
-  // 🏗️ DRAG & DROP
+  // DRAG & DROP
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
-    addLog("🏗️ Drag end", { from: result.source.index, to: result.destination.index });
+    addLog("Drag end", { from: result.source.index, to: result.destination.index });
 
     const items = Array.from(tasks);
     const [moved] = items.splice(result.source.index, 1);
