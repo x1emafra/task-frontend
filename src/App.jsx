@@ -67,10 +67,25 @@ function App() {
   // 🔎 SEARCH + FILTER
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [showAllDates, setShowAllDates] = useState(false); // ⬅️ Ver todo
+
+  // 🗓️ Mapeo de tareas por fecha para el calendario
+  const tasksByDate = useMemo(() => {
+    const map = {};
+    tasks.forEach(t => {
+      if (!t.date) return;
+      const d = new Date(t.date).toISOString().split('T')[0];
+      if (!map[d]) map[d] = { pending: false, completed: false };
+      if (t.completed) map[d].completed = true;
+      else map[d].pending = true;
+    });
+    return map;
+  }, [tasks]);
 
   const filteredTasks = tasks
     .filter((t) => {
-      // 📅 Filtrado por fecha del calendario
+      // 📅 Filtrado por fecha (si no estamos en modo "Ver todo")
+      if (showAllDates) return true;
       const taskDateStr = t.date ? new Date(t.date).toISOString().split('T')[0] : "";
       const selectedDateStr = new Date(date).toISOString().split('T')[0];
       return taskDateStr === selectedDateStr;
@@ -197,6 +212,20 @@ function App() {
             {/* 🧠 FILTERS & INPUT */}
             <div className="space-y-4">
               <div className="flex gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-xl w-fit">
+                <button
+                  onClick={() => setShowAllDates(!showAllDates)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${showAllDates
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : dark
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                    }`}
+                >
+                  {showAllDates ? "📅 POR FECHA" : "📅 TODAS"}
+                </button>
+
+                <div className="w-[1px] bg-white/10 my-1 mx-1" />
+
                 {["all", "pending", "completed"].map((f) => (
                   <button
                     key={f}
@@ -317,6 +346,19 @@ function App() {
                 value={date}
                 className={`w-full rounded-2xl border-none font-sans ${dark ? 'dark-calendar' : ''}`}
                 locale={i18n.language}
+                tileContent={({ date, view }) => {
+                  if (view !== 'month') return null;
+                  const d = date.toISOString().split('T')[0];
+                  const hasTasks = tasksByDate[d];
+                  if (!hasTasks) return null;
+
+                  return (
+                    <div className="flex justify-center gap-1 mt-1">
+                      {hasTasks.pending && <div className="w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.5)]" />}
+                      {hasTasks.completed && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_5px_rgba(59,130,246,0.5)]" />}
+                    </div>
+                  );
+                }}
               />
             </div>
 
@@ -420,6 +462,19 @@ function App() {
         .dark-calendar .react-calendar__month-view__days__day--neighboringMonth { color: #444 !important; }
         .dark-calendar .react-calendar__month-view__weekdays__weekday { color: #888; }
         .react-calendar__month-view__days__day--neighboringMonth { color: #ccc; }
+
+        /* Dot Indicators */
+        .react-calendar__tile {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 10px 5px !important;
+        }
+        .react-calendar__month-view__days__day {
+          height: 60px;
+        }
       `}</style>
     </div>
   );
