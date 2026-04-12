@@ -184,6 +184,8 @@ export default function Auth() {
               {isLogin ? "Regístrate ahora" : "Inicia sesión"}
             </button>
           </p>
+        </div>
+
         {/* FOOTER */}
         <div className="mt-6 text-center">
           <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-medium">
