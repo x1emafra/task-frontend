@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import Calendar from "react-calendar";
