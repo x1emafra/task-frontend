@@ -130,14 +130,14 @@ function App() {
   if (!session) return <Auth />;
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 overflow-hidden ${dark
+    <div className={`min-h-screen transition-colors duration-500 overflow-y-auto lg:overflow-hidden ${dark
       ? "bg-gradient-to-br from-black via-gray-900 to-black text-white"
       : "bg-gradient-to-br from-gray-100 via-white to-gray-200 text-gray-900"
       } flex items-center justify-center p-2 sm:p-4`}>
 
       <Toaster position="top-right" />
 
-      <div className={`w-[95vw] h-[92vh] backdrop-blur-3xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl border transition-all duration-300 flex flex-col ${dark
+      <div className={`w-[95vw] min-h-[92vh] lg:h-[92vh] backdrop-blur-3xl rounded-[2.5rem] p-4 sm:p-8 shadow-2xl border transition-all duration-300 flex flex-col my-auto ${dark
         ? "bg-white/5 border-white/10"
         : "bg-white/80 border-gray-200 shadow-blue-500/5"
         }`}>
@@ -385,8 +385,8 @@ function App() {
           </div>
 
           {/* DERECHA: CALENDAR & EXTRAS (5 columns) */}
-          <div className="lg:col-span-5 flex flex-col gap-10">
-            <div className={`p-6 rounded-[2.5rem] border transition-all ${dark
+          <div className="lg:col-span-5 flex flex-col gap-10 overflow-y-auto custom-scrollbar lg:pr-2">
+            <div className={`p-6 rounded-[2.5rem] border transition-all shrink-0 ${dark
               ? "bg-white/5 border-white/10"
               : "bg-white border-gray-100 shadow-xl"
               }`}>
@@ -525,7 +525,7 @@ function App() {
         .react-calendar__tile { border-radius: 12px; padding: 12px; transition: all 0.2s; color: inherit; }
         .react-calendar__tile:enabled:hover, .react-calendar__tile:enabled:focus { background-color: rgba(59, 130, 246, 0.1) !important; color: #3b82f6 !important; }
         .react-calendar__tile--now { background: rgba(59, 130, 246, 0.1) !important; color: #3b82f6 !important; font-weight: bold; }
-        .react-calendar__tile--active { background: #3b82f6 !important; color: white !important; shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
+        .react-calendar__tile--active { background: #3b82f6 !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
         
         .dark-calendar .react-calendar__month-view__days__day--neighboringMonth { color: #444 !important; }
         .dark-calendar .react-calendar__month-view__weekdays__weekday { color: #888; }
