@@ -44,14 +44,26 @@ export const taskService = {
   },
 
   async shareTask(taskId, email) {
-    const { error } = await supabase.from("shared_tasks").insert([
-      {
-        task_id: taskId,
-        user_email: email,
-      },
-    ]);
+    try {
+      const { data, error } = await supabase.functions.invoke("share-task", {
+        body: {
+          task_id: taskId,
+          email: email
+        }
+      });
 
-    if (error) throw error;
+      if (error) {
+        console.error("❌ FUNCTION ERROR:", error);
+        throw error;
+      }
+
+      console.log("✅ SHARE RESULT:", data);
+      return data;
+      
+    } catch (error) {
+      console.error("❌ SHARE ERROR:", error);
+      throw error;
+    }
   },
 
   async reorderTasks(updates) {
