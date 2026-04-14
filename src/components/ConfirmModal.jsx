@@ -13,7 +13,7 @@ export default function ConfirmModal({ open, onConfirm, onCancel }) {
           onClick={onCancel}
         >
           <motion.div
-            className="bg-gray-950 border border-white/10 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl"
+            className="bg-gray-950 border border-white/10 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl"
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}

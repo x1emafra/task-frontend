@@ -70,7 +70,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl rounded-3xl p-8 shadow-2xl border border-white/10">
+      <div className="w-full max-w-md bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-8 sm:p-10 shadow-2xl border border-white/10">
         
         {/* HEADER */}
         <div className="text-center mb-8">
@@ -140,10 +140,10 @@ export default function Auth() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                 tabIndex="-1"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={20} className="text-gray-400" /> : <Eye size={20} className="text-gray-400" />}
               </button>
             </div>
-            <p className="text-[10px] text-gray-600 ml-1">Mínimo 6 caracteres</p>
+            <p className="text-[10px] text-gray-600 ml-1 mt-1 font-semibold uppercase tracking-wider">Mínimo 6 caracteres</p>
           </div>
 
           <button

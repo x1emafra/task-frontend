@@ -45,7 +45,7 @@ function App() {
   const { debugLogs, lastError, clearLogs } = logger;
   const { session, loading: authLoading, handleLogout, handleReset } = useAuth(logger.addLog);
 
-  // 🕒 LIVE CLOCK & CALENDAR STATE
+  // LIVE CLOCK & CALENDAR STATE
   const [time, setTime] = useState(new Date());
   const [date, setDate] = useState(new Date());
 
@@ -77,7 +77,7 @@ function App() {
   const [shareModal, setShareModal] = useState({ open: false, taskId: null });
   const [showDebug, setShowDebug] = useState(false);
 
-  // 🌗 THEME
+  // THEME
   const [dark, setDark] = useState(() => {
     return localStorage.getItem("theme") !== "light";
   });
@@ -86,12 +86,12 @@ function App() {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // 🔎 SEARCH + FILTER
+  // SEARCH + FILTER
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [showAllDates, setShowAllDates] = useState(false); // ⬅️ Ver todo
+  const [showAllDates, setShowAllDates] = useState(false); // Ver todo
 
-  // 🗓️ Mapeo de tareas por fecha para el calendario
+  // Mapeo de tareas por fecha para el calendario
   const tasksByDate = useMemo(() => {
     const map = {};
     tasks.forEach(t => {
@@ -106,7 +106,7 @@ function App() {
 
   const filteredTasks = tasks
     .filter((t) => {
-      // 📅 Filtrado por fecha (si no estamos en modo "Ver todo")
+      // Filtrado por fecha (si no estamos en modo "Ver todo")
       if (showAllDates) return true;
       const taskDateStr = t.date ? new Date(t.date).toISOString().split('T')[0] : "";
       const selectedDateStr = new Date(date).toISOString().split('T')[0];
@@ -209,14 +209,14 @@ function App() {
         </div>
 
         {/* GRID CONTAINER (Extended) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 flex-1 min-h-0">
 
-          {/* IZQUIERDA: TASK MANAGER (8 columns) */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
+          {/* IZQUIERDA: TASK MANAGER (7 columns) */}
+          <div className="lg:col-span-7 flex flex-col gap-8">
 
-            {/* 📊 DASHBOARD & SEARCH */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-white/5">
+            {/* DASHBOARD & SEARCH */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center gap-6 bg-black/5 dark:bg-white/5 p-6 rounded-3xl border border-white/5">
                 <div className="flex-1 text-center border-r border-white/10">
                   <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total</p>
                   <p className="text-xl font-bold">{tasks.length}</p>
@@ -247,8 +247,8 @@ function App() {
               </div>
             </div>
 
-            {/* 🧠 FILTERS & INPUT */}
-            <div className="space-y-4">
+            {/* FILTERS & INPUT */}
+            <div className="space-y-6">
               <div className="flex gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-xl w-fit">
                 <button
                   onClick={() => setShowAllDates(!showAllDates)}
@@ -259,7 +259,15 @@ function App() {
                       : "text-gray-600 hover:text-gray-900"
                     }`}
                 >
-                  {showAllDates ? "📅 POR FECHA" : "📅 TODAS"}
+                  {showAllDates ? (
+                    <span className="flex items-center gap-2">
+                       <CalendarIcon size={14} /> POR FECHA
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <List size={14} /> TODAS
+                    </span>
+                  )}
                 </button>
 
                 <div className="w-[1px] bg-white/10 my-1 mx-1" />
@@ -376,10 +384,10 @@ function App() {
             </div>
           </div>
 
-          {/* DERECHA: CALENDAR & EXTRAS (4 columns) */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className={`p-4 rounded-3xl border transition-all ${dark
-              ? "bg-white/5 border-white/5"
+          {/* DERECHA: CALENDAR & EXTRAS (5 columns) */}
+          <div className="lg:col-span-5 flex flex-col gap-10">
+            <div className={`p-6 rounded-[2.5rem] border transition-all ${dark
+              ? "bg-white/5 border-white/10"
               : "bg-white border-gray-100 shadow-xl"
               }`}>
               <Calendar
@@ -454,7 +462,7 @@ function App() {
           onClose={() => setShareModal({ open: false, taskId: null })}
         />
 
-        {/* 🐛 DEBUG PANEL (Miniaturized) */}
+        {/* DEBUG PANEL (Miniaturized) */}
         {!loading && (
           <div className="mt-10 border-t border-white/5 pt-6 opacity-20 hover:opacity-100 transition-opacity pb-10">
             <div className="flex justify-between items-center mb-2 px-2">
