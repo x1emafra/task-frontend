@@ -9,16 +9,10 @@ serve(async (req) => {
   }
 
   try {
-    // Configura el cliente de Supabase usando las variables de entorno de Edge Runtime
+    // Usamos la service role key para tener privilegios de admin y saltear RLS
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { 
-        global: { 
-          // Reenviamos el header de Authorization para respetar RLS y saber qué usuario hace la petición
-          headers: { Authorization: req.headers.get('Authorization')! } 
-        } 
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
     // Parsear los parámetros de la solicitud
